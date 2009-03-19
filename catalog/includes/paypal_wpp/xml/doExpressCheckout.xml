@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+<soap:Header>
+  <RequesterCredentials xmlns="urn:ebay:api:PayPalAPI">
+    <Credentials xmlns="urn:ebay:apis:eBLBaseComponents">
+      <Username>PAYPAL_USERNAME</Username>
+      <Password>PAYPAL_PASSWORD</Password>
+    </Credentials>
+  </RequesterCredentials>
+</soap:Header>
+<soap:Body>
+  <DoExpressCheckoutPaymentReq xmlns="urn:ebay:api:PayPalAPI">
+    <DoExpressCheckoutPaymentRequest>
+      <Version xmlns="urn:ebay:apis:eBLBaseComponents">PAYPAL_VERSION</Version>
+      <DoExpressCheckoutPaymentRequestDetails xmlns="urn:ebay:apis:eBLBaseComponents">
+        <PaymentAction>PAYPAL_PAYMENT_ACTION</PaymentAction>
+        <Token>PAYPAL_TOKEN</Token>
+        <PayerID>PAYPAL_PAYER_ID</PayerID>
+        <PaymentDetails>
+          <OrderTotal currencyID="PAYPAL_CURRENCY">PAYPAL_ORDER_TOTAL</OrderTotal>
+          <OrderDescription>PAYPAL_ORDER_DESCRIPTION</OrderDescription>
+          <ItemTotal currencyID="PAYPAL_CURRENCY">PAYPAL_ITEM_TOTAL</ItemTotal>
+          <ShippingTotal currencyID="PAYPAL_CURRENCY">PAYPAL_SHIPPING_TOTAL</ShippingTotal>
+          <HandlingTotal currencyID="PAYPAL_CURRENCY">PAYPAL_HANDLING_TOTAL</HandlingTotal>
+          <TaxTotal currencyID="PAYPAL_CURRENCY">PAYPAL_TAX_TOTAL</TaxTotal>
+          <Custom>PAYPAL_CUSTOM</Custom>
+          <NotifyURL>PAYPAL_NOTIFY_URL</NotifyURL>
+          <InvoiceID>PAYPAL_INVOICE_ID</InvoiceID>
+          <ShipToAddress>
+            <Name>PAYPAL_SHIPPING_NAME</Name>
+            <Street1>PAYPAL_SHIPPING_ADDRESS1</Street1>
+            <Street2>PAYPAL_SHIPPING_ADDRESS2</Street2>
+            <CityName>PAYPAL_SHIPPING_CITY</CityName> 
+            <StateOrProvince>PAYPAL_SHIPPING_STATE</StateOrProvince>
+            <PostalCode>PAYPAL_SHIPPING_ZIP</PostalCode>
+            <Country>PAYPAL_SHIPPING_COUNTRY</Country>
+          </ShipToAddress>
+          PAYMENT_DETAILS_ITEM
+        </PaymentDetails>
+      </DoExpressCheckoutPaymentRequestDetails>
+    </DoExpressCheckoutPaymentRequest>
+  </DoExpressCheckoutPaymentReq>
+</soap:Body>
+</soap:Envelope>

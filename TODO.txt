@@ -1,0 +1,2 @@
+- In the module, check if orders_total is set.  If not, display an error about applying the fix to checkout_process.php
+- Doesn't work with coupons with free shipping

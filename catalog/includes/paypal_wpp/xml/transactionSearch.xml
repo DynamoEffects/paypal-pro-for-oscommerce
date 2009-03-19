@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+<soap:Header>
+  <RequesterCredentials xmlns="urn:ebay:api:PayPalAPI">
+    <Credentials xmlns="urn:ebay:apis:eBLBaseComponents">
+      <Username>PAYPAL_USERNAME</Username>
+      <Password>PAYPAL_PASSWORD</Password>
+    </Credentials>
+  </RequesterCredentials>
+</soap:Header>
+<soap:Body>
+  <TransactionSearchReq xmlns="urn:ebay:api:PayPalAPI">
+    <TransactionSearchRequest>
+      <Version xmlns="urn:ebay:apis:eBLBaseComponents">PAYPAL_VERSION</Version>
+      <StartDate>PAYPAL_START_DATE</StartDate>
+      <Payer>PAYPAL_PAYER</Payer>
+      <Amount currencyID="PAYPAL_CURRENCY">PAYPAL_AMOUNT</Amount>
+    </TransactionSearchRequest>
+  </TransactionSearchReq>
+</soap:Body>
+</soap:Envelope>

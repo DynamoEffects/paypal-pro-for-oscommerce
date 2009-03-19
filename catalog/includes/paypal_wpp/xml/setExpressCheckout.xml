@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+<soap:Header>
+  <RequesterCredentials xmlns="urn:ebay:api:PayPalAPI">
+    <Credentials xmlns="urn:ebay:apis:eBLBaseComponents">
+      <Username>PAYPAL_USERNAME</Username>
+      <Password>PAYPAL_PASSWORD</Password>
+    </Credentials>
+  </RequesterCredentials>
+</soap:Header>
+<soap:Body>
+  <SetExpressCheckoutReq xmlns="urn:ebay:api:PayPalAPI">
+    <SetExpressCheckoutRequest>
+      <Version xmlns="urn:ebay:apis:eBLBaseComponents">PAYPAL_VERSION</Version>
+      <SetExpressCheckoutRequestDetails xmlns="urn:ebay:apis:eBLBaseComponents">
+        <OrderTotal currencyID="PAYPAL_CURRENCY">PAYPAL_ORDER_TOTAL</OrderTotal>
+        <ReturnURL>PAYPAL_RETURN_URL</ReturnURL>
+        <CancelURL>PAYPAL_CANCEL_URL</CancelURL>
+        <ReqConfirmShipping>PAYPAL_REQUIRE_CONFIRM_SHIPPING</ReqConfirmShipping>
+        <NoShipping>PAYPAL_NO_SHIPPING</NoShipping>
+        <AddressOverride>PAYPAL_ADDRESS_OVERRIDE</AddressOverride>
+        <LocaleCode>PAYPAL_LOCALE_CODE</LocaleCode>
+        <PageStyle>PAYPAL_PAGE_STYLE</PageStyle>
+        <cpp-header-image>PAYPAL_CPP_HEADER_IMAGE</cpp-header-image>
+        <cpp-header-border-color>PAYPAL_CPP_HEADER_BORDER_COLOR</cpp-header-border-color>
+        <cpp-header-back-color>PAYPAL_CPP_HEADER_BACK_COLOR</cpp-header-back-color>
+        <cpp-payflow-color>PAYPAL_CPP_PAYFLOW_COLOR</cpp-payflow-color>
+        <PaymentAction>PAYPAL_PAYMENT_ACTION</PaymentAction>
+        <Address>
+          <Name>PAYPAL_NAME</Name>
+          <Street1>PAYPAL_ADDRESS1</Street1>
+          <Street2>PAYPAL_ADDRESS2</Street2>
+          <CityName>PAYPAL_CITY</CityName> 
+          <StateOrProvince>PAYPAL_STATE</StateOrProvince>
+          <PostalCode>PAYPAL_ZIP</PostalCode>
+          <Country>PAYPAL_COUNTRY</Country>
+        </Address>
+      </SetExpressCheckoutRequestDetails>
+    </SetExpressCheckoutRequest> 
+  </SetExpressCheckoutReq>
+</soap:Body>
+</soap:Envelope>
