@@ -645,10 +645,22 @@
       die();
     }
     
+    function isHTTPS() {
+      if($_SERVER['https'] == 1) {
+         return true;
+      } elseif ($_SERVER['https'] == 'on') {
+         return true;
+      } elseif ($_SERVER['SERVER_PORT'] == 443) {
+         return true;
+      } else {
+        return false;
+      } 
+    }
+    
     function display_buttons() {
       if (!$this->enabled) return false;
       
-      if (!$_SERVER['HTTPS'] == 'on') {
+      if ($this->isHTTPS()) {
         echo '<tr><td class="main" style="padding-bottom: 20px"><b>' . WPP_ERROR_NO_SSL . '</b></td></tr>';
         return false;
       }
