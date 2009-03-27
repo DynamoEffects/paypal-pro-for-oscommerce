@@ -9,6 +9,7 @@
   class paypal_wpp {
     var $code, $title, $description, $enabled, $resources, $is_admin, $max_retries, $cc_test_number, $total_amount;
     var $transaction_log = array();
+    var $debug_email;
     
     /*
      * Constructor function -- initialize class properties
@@ -18,6 +19,7 @@
       $this->code = 'paypal_wpp';
       $this->codeTitle = 'PayPal Website Payments Pro Plus';
       $this->codeVersion = '1.0.5';
+      $this->debug_email = STORE_OWNER_EMAIL_ADDRESS;
       
       /* This variable stores the transaction request */
       $this->last_data = '';
