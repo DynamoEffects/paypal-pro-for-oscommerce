@@ -1315,7 +1315,7 @@
         case 'CA':
         //Paypal only accepts two character state/province codes for some countries
           if (strlen($order->billing['state']) > 2) {
-            $state_query = tep_db_query("SELECT zone_code FROM " . TABLE_ZONES . " WHERE zone_name = '".$order->billing['state']."' AND zone_country_id = " . $order->billing['country']['id'] . " LIMIT 1");
+            $state_query = tep_db_query("SELECT zone_code FROM " . TABLE_ZONES . " WHERE zone_name = '" . tep_db_input($order->billing['state']) . "' AND zone_country_id = " . (int)$order->billing['country']['id'] . " LIMIT 1");
             if (tep_db_num_rows($state_query) > 0) {
               $state = tep_db_fetch_array($state_query);
               $order->billing['state'] = $state['zone_code'];
