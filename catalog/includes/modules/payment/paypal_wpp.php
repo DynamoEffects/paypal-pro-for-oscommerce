@@ -757,21 +757,21 @@
         tep_session_register('paypal_ec_payer_info');
         $_SESSION['paypal_ec_payer_info'] = array(
             'payer_id' => $payer_info['PayerID'], 
-            'payer_email' => $payer_info['Payer'], 
-            'payer_firstname' => $payer_info['PayerName'][0]['FirstName'],
-            'payer_lastname' => $payer_info['PayerName'][0]['LastName'],
-            'payer_business' => $payer_info['PayerBusiness'],
-            'payer_status' => $payer_info['PayerStatus'],
-            'ship_owner' => $payer_info['Address'][0]['AddressOwner'],
-            'ship_name' => $payer_info['Address'][0]['Name'],
-            'ship_street_1' => $payer_info['Address'][0]['Street1'],
-            'ship_street_2' => $payer_info['Address'][0]['Street2'],
-            'ship_city' => $payer_info['Address'][0]['CityName'],
-            'ship_state' => $payer_info['Address'][0]['StateOrProvince'],
-            'ship_postal_code' => $payer_info['Address'][0]['PostalCode'],
-            'ship_country' => $payer_info['Address'][0]['Country'],
-            'ship_phone' => $root_node['ContactPhone'],
-            'ship_address_status' => $payer_info['Address'][0]['AddressStatus']);
+            'payer_email' => utf8_decode($payer_info['Payer']), 
+            'payer_firstname' => utf8_decode($payer_info['PayerName'][0]['FirstName']),
+            'payer_lastname' => utf8_decode($payer_info['PayerName'][0]['LastName']),
+            'payer_business' => utf8_decode($payer_info['PayerBusiness']),
+            'payer_status' => utf8_decode($payer_info['PayerStatus']),
+            'ship_owner' => utf8_decode($payer_info['Address'][0]['AddressOwner']),
+            'ship_name' => utf8_decode($payer_info['Address'][0]['Name']),
+            'ship_street_1' => utf8_decode($payer_info['Address'][0]['Street1']),
+            'ship_street_2' => utf8_decode($payer_info['Address'][0]['Street2']),
+            'ship_city' => utf8_decode($payer_info['Address'][0]['CityName']),
+            'ship_state' => utf8_decode($payer_info['Address'][0]['StateOrProvince']),
+            'ship_postal_code' => utf8_decode($payer_info['Address'][0]['PostalCode']),
+            'ship_country' => utf8_decode($payer_info['Address'][0]['Country']),
+            'ship_phone' => utf8_decode($root_node['ContactPhone']),
+            'ship_address_status' => utf8_decode($payer_info['Address'][0]['AddressStatus']));
             
 
 //moved this block below creation of paypal_ec_payer_info array, because it depends on these values.  
