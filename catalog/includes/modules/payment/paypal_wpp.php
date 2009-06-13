@@ -751,21 +751,6 @@
           $this->away_with_you(MODULE_PAYMENT_PAYPAL_DP_TEXT_UNVERIFIED, true);
         }
         
-        $country_query = tep_db_query("SELECT countries_id, countries_name, address_format_id 
-                                       FROM " . TABLE_COUNTRIES . " 
-                                       WHERE countries_iso_code_2 = '" . tep_db_input($_SESSION['paypal_ec_payer_info']['ship_country']) . "' 
-                                       LIMIT 1");
-                                       
-        if (tep_db_num_rows($country_query) > 0) {
-          $country = tep_db_fetch_array($country_query);
-          $country_id = $country['countries_id'];
-          $_SESSION['paypal_ec_payer_info']['ship_country_id'] = $country_id;
-          $_SESSION['paypal_ec_payer_info']['ship_country_name'] = $country['countries_name'];
-          $address_format_id = $country['address_format_id'];
-        } else {
-          $this->away_with_you(MODULE_PAYMENT_PAYPAL_DP_TEXT_ERROR_COUNTRY, true);
-        }
-
         tep_session_register('paypal_ec_payer_id');
         $_SESSION['paypal_ec_payer_id'] = $payer_info['PayerID'];
 
@@ -785,12 +770,26 @@
             'ship_state' => $payer_info['Address'][0]['StateOrProvince'],
             'ship_postal_code' => $payer_info['Address'][0]['PostalCode'],
             'ship_country' => $payer_info['Address'][0]['Country'],
-            'ship_country_name' => $payer_info['Address'][0]['CountryName'],
             'ship_phone' => $root_node['ContactPhone'],
             'ship_address_status' => $payer_info['Address'][0]['AddressStatus']);
             
 
-        
+//moved this block below creation of paypal_ec_payer_info array, because it depends on these values.  
+         $country_query = tep_db_query("SELECT countries_id, countries_name, address_format_id 
+                                       FROM " . TABLE_COUNTRIES . " 
+                                       WHERE countries_iso_code_2 = '" . tep_db_input($_SESSION['paypal_ec_payer_info']['ship_country']) . "' 
+                                       LIMIT 1");
+                                       
+        if (tep_db_num_rows($country_query) > 0) {
+          $country = tep_db_fetch_array($country_query);
+          $country_id = $country['countries_id'];
+          $_SESSION['paypal_ec_payer_info']['ship_country_id'] = $country_id;
+          $_SESSION['paypal_ec_payer_info']['ship_country_name'] = $country['countries_name'];
+          $address_format_id = $country['address_format_id'];
+        } else {
+          $this->away_with_you(MODULE_PAYMENT_PAYPAL_DP_TEXT_ERROR_COUNTRY, true);
+        }
+
         $states_query = tep_db_query("SELECT zone_id 
                                       FROM " . TABLE_ZONES . " 
                                       WHERE (zone_code = '" . tep_db_input($_SESSION['paypal_ec_payer_info']['ship_state']) . "' 
