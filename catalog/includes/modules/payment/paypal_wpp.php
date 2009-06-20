@@ -354,6 +354,38 @@
       }
     }
     
+    function wpp_fix_state_for_paypal($country_code, $state) {
+      //Thanks goes to SteveDallas for improved international support
+      //Set the billing state field depending on what PayPal wants to see for that country
+      switch ($country_code) {
+        case 'US':
+        case 'CA':
+        //Paypal only accepts two character state/province codes for some countries
+          if (strlen($state) > 2) {
+            $state_query = tep_db_query("SELECT z.zone_code FROM " . TABLE_ZONES . " as z, " . TABLE_COUNTRIES . " as c WHERE c.countries_iso_code_2 = '" . $country_code . "' and c.countries_id = z.zone_country_id and z.zone_name = '" . $state . "'");
+            if (tep_db_num_rows($state_query) > 0) {
+              $state_array = tep_db_fetch_array($state_query);
+              $the_state = $state_array['zone_code'];
+            } else {
+              $this->away_with_you(MODULE_PAYMENT_PAYPAL_DP_TEXT_STATE_ERROR);
+            }
+          }
+          
+          break;
+        case 'AT':
+        case 'BE':
+        case 'FR':
+        case 'DE':
+        case 'CH':
+          $the_state = '';
+          break;
+        default:
+          $the_state = $state;
+          break;
+      }
+    return $the_state;
+    }
+
     function wpp_get_currency() {
       switch (MODULE_PAYMENT_PAYPAL_DP_CURRENCY) {
         case 'AUD':
@@ -622,15 +654,7 @@
         $order_info['PAYPAL_ADDRESS1'] = $order->delivery['street_address'];
         $order_info['PAYPAL_ADDRESS2'] = $order->delivery['suburb'];
         $order_info['PAYPAL_CITY'] = $order->delivery['city'];
-        if (strlen($order->delivery['state']) > 2) {
-          $state_query = tep_db_query("SELECT zone_code FROM " . TABLE_ZONES . " WHERE zone_name = '".$order->delivery['state']."'");
-          if (tep_db_num_rows($state_query) > 0) {
-            $state = tep_db_fetch_array($state_query);
-            $order_info['PAYPAL_STATE'] = $state['zone_code'];
-          } else {
-            $order_info['PAYPAL_STATE'] = '';
-          }
-        }
+        $order_info['PAYPAL_STATE'] = $this->wpp_fix_state_for_paypal($order->delivery['country']['iso_code_2'], $order->delivery['state']);
         $order_info['PAYPAL_ZIP'] = $order->delivery['postcode'];
         $order_info['PAYPAL_COUNTRY'] = $order->delivery['country']['iso_code_2'];
       } else {
@@ -1307,63 +1331,6 @@
         $order_total[$ot['code']] += $ot['value'];
       }
 
-      //Thanks goes to SteveDallas for improved international support
-      //Set the billing state field depending on what PayPal wants to see for that country
-      switch ($order->billing['country']['iso_code_2']) {
-        case 'US':
-        case 'CA':
-        //Paypal only accepts two character state/province codes for some countries
-          if (strlen($order->billing['state']) > 2) {
-            $state_query = tep_db_query("SELECT zone_code FROM " . TABLE_ZONES . " WHERE zone_name = '" . tep_db_input($order->billing['state']) . "' AND zone_country_id = " . (int)$order->billing['country']['id'] . " LIMIT 1");
-            if (tep_db_num_rows($state_query) > 0) {
-              $state = tep_db_fetch_array($state_query);
-              $order->billing['state'] = $state['zone_code'];
-            } else {
-              $this->away_with_you(MODULE_PAYMENT_PAYPAL_DP_TEXT_STATE_ERROR);
-            }
-          }
-          break;
-        case 'AT':
-        case 'BE':
-        case 'FR':
-        case 'DE':
-        case 'CH':
-          $order->billing['state'] = '';
-          break;
-        default:
-          break;
-      }
-
-      //Fix contributed by Glen Hoag.  This wasn't handling the shipping state correctly if it was different than the billing
-      if (tep_not_null($order->delivery['street_address'])) {
-        //Set the delivery state field depending on what PayPal wants to see for that country
-        switch ($order->delivery['country']['iso_code_2']) {
-          case 'US':
-          case 'CA':
-          //Paypal only accepts two character state/province codes for some countries
-            if (strlen($order->delivery['state']) > 2) {
-              $state_query = tep_db_query("SELECT zone_code FROM " . TABLE_ZONES . " WHERE zone_name = '".$order->delivery['state']."' AND zone_country_id = " . $order->delivery['country']['id'] . " LIMIT 1");
-              if (tep_db_num_rows($state_query) > 0) {
-                $state = tep_db_fetch_array($state_query);
-                $order->delivery['state'] = $state['zone_code'];
-              } else {
-                $this->away_with_you(MODULE_PAYMENT_PAYPAL_DP_TEXT_STATE_ERROR);
-              }
-            }
-            
-            break;
-          case 'AT':
-          case 'BE':
-          case 'FR':
-          case 'DE':
-          case 'CH':
-            $order->delivery['state'] = '';
-            break;
-          default:
-            break;
-        }
-      }
-        
       $order_info = array();
       
       //If the merchant has a different currency selected for this module
@@ -1418,7 +1385,7 @@
         $order_info['PAYPAL_SHIPPING_ADDRESS1'] = $order->delivery['street_address'];
         $order_info['PAYPAL_SHIPPING_ADDRESS2'] = $order->delivery['suburb'];
         $order_info['PAYPAL_SHIPPING_CITY'] = $order->delivery['city'];
-        $order_info['PAYPAL_SHIPPING_STATE'] = $order->delivery['state'];
+        $order_info['PAYPAL_SHIPPING_STATE'] = $this->wpp_fix_state_for_paypal($order->delivery['country']['iso_code_2'] ,$order->delivery['state']);
         $order_info['PAYPAL_SHIPPING_ZIP'] = $order->delivery['postcode'];
         $order_info['PAYPAL_SHIPPING_COUNTRY'] = $order->delivery['country']['iso_code_2'];
       } else {
@@ -1426,7 +1393,7 @@
         $order_info['PAYPAL_SHIPPING_ADDRESS1'] = $order->billing['street_address'];
         $order_info['PAYPAL_SHIPPING_ADDRESS2'] = $order->billing['suburb'];
         $order_info['PAYPAL_SHIPPING_CITY'] = $order->billing['city'];
-        $order_info['PAYPAL_SHIPPING_STATE'] = $order->billing['state'];
+        $order_info['PAYPAL_SHIPPING_STATE'] = $this->wpp_fix_state_for_paypal($order->billing['country']['iso_code_2'] ,$order->billing['state']);
         $order_info['PAYPAL_SHIPPING_ZIP'] = $order->billing['postcode'];
         $order_info['PAYPAL_SHIPPING_COUNTRY'] = $order->billing['country']['iso_code_2'];
       }
@@ -1594,7 +1561,7 @@
         $order_info['PAYPAL_ADDRESS1'] = $order->billing['street_address'];
         $order_info['PAYPAL_ADDRESS2'] = $order->billing['suburb'];
         $order_info['PAYPAL_CITY'] = $order->billing['city'];
-        $order_info['PAYPAL_STATE'] = $order->billing['state'];
+        $order_info['PAYPAL_STATE'] = $this->wpp_fix_state_for_paypal($order->billing['country']['iso_code_2'], $order->billing['state']);
         $order_info['PAYPAL_ZIP'] = $order->billing['postcode'];
         $order_info['PAYPAL_COUNTRY'] = $order->billing['country']['iso_code_2'];
         $order_info['PAYPAL_BUYER_EMAIL'] = $order->customer['email_address'];
