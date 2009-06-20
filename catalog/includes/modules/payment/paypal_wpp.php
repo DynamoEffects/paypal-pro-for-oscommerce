@@ -1926,7 +1926,7 @@
         tep_db_query("ALTER TABLE `" . TABLE_CUSTOMERS . "` ADD `customers_paypal_ec` TINYINT (1) UNSIGNED DEFAULT '0' NOT NULL");
       }
       
-      tep_db_query("CREATE TABLE IF NOT EXISTS `orders_status_history_transactions` (
+      tep_db_query("CREATE TABLE IF NOT EXISTS `" . TABLE_ORDERS_STATUS_HISTORY_TRANSACTIONS . "` (
                     `orders_status_history_id` INT NOT NULL ,
                     `transaction_id` VARCHAR( 64 ) NOT NULL ,
                     `transaction_type` VARCHAR( 32 ) NOT NULL ,
