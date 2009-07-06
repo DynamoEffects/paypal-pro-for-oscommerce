@@ -1349,7 +1349,7 @@
       $order_info['PAYPAL_SHIPPING_TOTAL'] = round($order_total['ot_shipping'] * $currency_value, 2);
       $order_info['PAYPAL_HANDLING_TOTAL'] = '';
       
-      if (DISPLAY_PRICES_WITH_TAX) {
+      if (DISPLAY_PRICE_WITH_TAX == 'true') {
         $order_info['PAYPAL_TAX_TOTAL'] = '';
       } else {
         $order_info['PAYPAL_TAX_TOTAL'] = round($order_total['ot_tax'] * $currency_value, 2);
@@ -1357,7 +1357,7 @@
       
       $order_total_check = $order_info['PAYPAL_ORDER_TOTAL'] - $order_info['PAYPAL_SHIPPING_TOTAL'] - $order_info['PAYPAL_HANDLING_TOTAL'];
       
-      if (!DISPLAY_PRICES_WITH_TAX) {
+      if (!(DISPLAY_PRICE_WITH_TAX == 'true')) {
         $order_total_check -= $order_info['PAYPAL_TAX_TOTAL'];
       }
       
