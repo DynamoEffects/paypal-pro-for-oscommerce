@@ -247,7 +247,7 @@
                                                 array('title' => MODULE_PAYMENT_PAYPAL_DP_TEXT_CREDIT_CARD_TYPE,
                                                       'field' => $_POST['paypalwpp_cc_type']),
                                                 array('title' => MODULE_PAYMENT_PAYPAL_DP_TEXT_CREDIT_CARD_NUMBER,
-                                                      'field' => substr($_POST['paypalwpp_cc_number'], 0, 4) . str_repeat('X', (strlen($_POST['paypalwpp_cc_number']) - 8)) . substr($_POST['paypalwpp_cc_number'], -4)),
+                                                      'field' => str_repeat('X', (strlen($_POST['paypalwpp_cc_number']) - 4)) . substr($_POST['paypalwpp_cc_number'], -4)),
                                                 array('title' => MODULE_PAYMENT_PAYPAL_DP_TEXT_CREDIT_CARD_EXPIRES,
                                                       'field' => strftime('%B, %Y', mktime(0,0,0,$_POST['paypalwpp_cc_expires_month'], 1, '20' . $_POST['paypalwpp_cc_expires_year'])))));
   
@@ -1532,10 +1532,11 @@
         }
         
         //If they're still here, and awake, set some of the order object's variables
+        //Storage of expiry date commented out for PCI DSS compliance
         $order->info['cc_type'] = $cc_type;
-        $order->info['cc_number'] = substr($cc_number, 0, 4) . str_repeat('X', (strlen($cc_number) - 8)) . substr($cc_number, -4);
+        $order->info['cc_number'] = str_repeat('X', (strlen($cc_number) - 4)) . substr($cc_number, -4);
         $order->info['cc_owner'] = $cc_first_name . ' ' . $cc_last_name;
-        $order->info['cc_expires'] = $cc_expdate_month . substr($cc_expdate_year, -2);
+//        $order->info['cc_expires'] = $cc_expdate_month . substr($cc_expdate_year, -2);
 
         //These have to be set to empty values so that the placeholders in the XML will get replaced
         $order_info['PAYPAL_CC_UK_DATA'] = '';
