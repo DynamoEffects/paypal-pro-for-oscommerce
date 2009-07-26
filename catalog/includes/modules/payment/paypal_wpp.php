@@ -1146,7 +1146,7 @@
       $output  = '<PaymentDetailsItem>';
       $output .= '<Name>' . $details['name'] . '</Name>';
       $output .= '<Amount currencyID="' . $details['currency'] . '">' . number_format($details['amount'], 2, '.', '') . '</Amount>';
-      $output .= '<Number>' . ($details['model'] == '' ? '-' : '') . '</Number>';
+      $output .= '<Number>' . ($details['model'] == '' ? '-' : $details['model']) . '</Number>';
       $output .= '<Quantity>' . $details['qty'] . '</Quantity>';
       $output .= '</PaymentDetailsItem>';
       
@@ -1180,13 +1180,16 @@
         foreach ($order->products as $o) {
           $qty = $o['qty'];
           $price = tep_add_tax($o['final_price'] * $currency_value, $o['tax']);
+          $name = $o['name'];
           
-          if ($qty == (string)(float)$qty) {
+          // PayPal doesn't like fractional quantities, so force non-integer quantities to 1 and the price to be the extended price          
+          if ($qty != (int)$qty) {
+            $name .= ' (' . $qty . ' @ ' . $price . ')';
             $price = $price * $qty;
             $qty = '1';
           }
           
-          $output .= $this->wpp_add_PDI(array('name' => $this->wpp_xml_safe($o['name']),
+          $output .= $this->wpp_add_PDI(array('name' => $this->wpp_xml_safe($name),
                                               'currency' => $currency,
                                               'amount' => $price,
                                               'model' => $this->wpp_xml_safe($o['model']),
