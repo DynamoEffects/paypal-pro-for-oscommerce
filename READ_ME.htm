@@ -358,6 +358,17 @@
           <h2>Step #6 - Modify checkout_shipping.php</h2>
           
           <ol>
+            <li><b>FIND</b> the following lines around line 54:<br />
+                <textarea wrap="off">  if ($order->content_type == 'virtual') {
+    if (!tep_session_is_registered('shipping')) tep_session_register('shipping');
+    $shipping = false;
+    $sendto = false;</textarea>
+                <br /><br />
+                and add these lines <b>BELOW</b> them:<br />
+                <textarea wrap="off">//---PayPal WPP Modification START ---//
+    tep_paypal_wpp_checkout_shipping_redirect($show_payment_page, $ec_enabled);
+//---PayPal WPP Modification END ---//</textarea>
+            </li>
             <li><b>FIND</b> the following lines around line 122:<br />
                 <textarea wrap="off">              $shipping = array('id' => $shipping,
                                 'title' => (($free_shipping == true) ?  $quote[0]['methods'][0]['title'] : $quote[0]['module'] . ' (' . $quote[0]['methods'][0]['title'] . ')'),

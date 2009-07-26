@@ -55,6 +55,9 @@
     if (!tep_session_is_registered('shipping')) tep_session_register('shipping');
     $shipping = false;
     $sendto = false;
+//---PayPal WPP Modification START ---//
+	tep_paypal_wpp_checkout_shipping_redirect($show_payment_page, $ec_enabled);
+//---PayPal WPP Modification END ---//
     tep_redirect(tep_href_link(FILENAME_CHECKOUT_PAYMENT, '', 'SSL'));
   }
 
