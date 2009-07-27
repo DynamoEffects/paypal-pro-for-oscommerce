@@ -362,7 +362,7 @@
         case 'CA':
         //Paypal only accepts two character state/province codes for some countries
           if (strlen($state) > 2) {
-            $state_query = tep_db_query("SELECT z.zone_code FROM " . TABLE_ZONES . " as z, " . TABLE_COUNTRIES . " as c WHERE c.countries_iso_code_2 = '" . $country_code . "' and c.countries_id = z.zone_country_id and z.zone_name = '" . $state . "'");
+            $state_query = tep_db_query("SELECT z.zone_code FROM " . TABLE_ZONES . " as z, " . TABLE_COUNTRIES . " as c WHERE c.countries_iso_code_2 = '" . $country_code . "' and c.countries_id = z.zone_country_id and z.zone_name = '" . tep_db_input($state) . "'");
             if (tep_db_num_rows($state_query) > 0) {
               $state_array = tep_db_fetch_array($state_query);
               $the_state = $state_array['zone_code'];
