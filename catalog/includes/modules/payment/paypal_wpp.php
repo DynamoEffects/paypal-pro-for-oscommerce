@@ -1193,7 +1193,7 @@
                                               'currency' => $currency,
                                               'amount' => $price,
                                               'model' => $this->wpp_xml_safe($o['model']),
-                                              'qty' => $qty));
+                                              'qty' => (int)$qty));
           $total += number_format(round($price, 2) * $qty, 2, '.', '');
         }
       }
