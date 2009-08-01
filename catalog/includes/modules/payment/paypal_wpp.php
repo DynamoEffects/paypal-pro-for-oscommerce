@@ -1457,7 +1457,7 @@
           }
           
           if ($response['DoExpressCheckoutPaymentResponse'][0]['Errors'][0]['ErrorCode'] == '') {
-            $this->away_with_you(MODULE_PAYMENT_PAYPAL_DP_TEXT_DECLINED . 'No response from the payment processor<br>No response was received from the payment processor.  Please contact the store owner for assistance.', true);
+            $this->away_with_you(MODULE_PAYMENT_PAYPAL_EC_TEXT_DECLINED . 'No response from PayPal<br>No response was received from PayPal.  Please contact the store owner for assistance.', true);
           } else {
             $this->away_with_you(MODULE_PAYMENT_PAYPAL_DP_TEXT_ERROR . $this->return_transaction_errors($response['DoExpressCheckoutPaymentResponse'][0]['Errors']), true);
           }
@@ -1669,7 +1669,7 @@
             
             //If the return is empty
             if (!tep_not_null($error_log)) {
-              $this->away_with_you(MODULE_PAYMENT_PAYPAL_DP_TEXT_DECLINED . 'No response from PayPal<br>No response was received from PayPal.  Please contact the store owner for assistance.', false, FILENAME_CHECKOUT_PAYMENT);
+              $this->away_with_you(MODULE_PAYMENT_PAYPAL_DP_TEXT_DECLINED . 'No response from the payment processor<br>No response was received from the payment processor.  Please contact the store owner for assistance.', false, FILENAME_CHECKOUT_PAYMENT);
             } else {
               $this->away_with_you(MODULE_PAYMENT_PAYPAL_DP_TEXT_DECLINED . $error_log, false, FILENAME_CHECKOUT_PAYMENT);
             }

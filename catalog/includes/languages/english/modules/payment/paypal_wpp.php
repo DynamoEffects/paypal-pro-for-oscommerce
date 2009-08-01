@@ -42,4 +42,5 @@
   define('MODULE_PAYMENT_PAYPAL_DP_GEN_ERROR', 'Payment not processed!');
   define('MODULE_PAYMENT_PAYPAL_EC_ALTERNATIVE', '<hr /><p align="center">or you may use</p><hr />');
   define('MODULE_PAYMENT_PAYPAL_DP_BUG_1629', 'Your store has a bug in checkout_process.php that prevents this module from working.  Please read the Troubleshooting section of the READ_ME.htm that came with the module for more information.');
+  define('MODULE_PAYMENT_PAYPAL_EC_TEXT_DECLINED', 'Your PayPal transaction was declined. Please select a different method.<br><br>');
 ?>
