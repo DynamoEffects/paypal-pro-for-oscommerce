@@ -893,7 +893,7 @@
                                     'entry_street_address' => $_SESSION['paypal_ec_payer_info']['ship_street_1'],
                                     'entry_suburb' => $_SESSION['paypal_ec_payer_info']['ship_street_2'],
                                     'entry_city' => $_SESSION['paypal_ec_payer_info']['ship_city'],
-                                    'entry_state' => $_SESSION['paypal_ec_payer_info']['ship_state'],
+                                    'entry_state' => ($state_id ? '' : $_SESSION['paypal_ec_payer_info']['ship_state']),
                                     'entry_zone_id' => $state_id,
                                     'entry_postcode' => $_SESSION['paypal_ec_payer_info']['ship_postal_code'],
                                     'entry_country_id' => $country_id);
