@@ -957,6 +957,7 @@
         $address_query = tep_db_query("SELECT address_book_id as id 
                                        FROM " . TABLE_ADDRESS_BOOK . " 
                                        WHERE entry_street_address = '" . tep_db_input($_SESSION['paypal_ec_payer_info']['ship_street_1']) . "' 
+									     AND customers_id = '" . $customers_id . "'
                                          AND entry_city = '" . tep_db_input($_SESSION['paypal_ec_payer_info']['ship_city']) . "' 
                                          AND entry_postcode = '" . tep_db_input($_SESSION['paypal_ec_payer_info']['ship_postal_code']) . "' 
                                        LIMIT 1");
