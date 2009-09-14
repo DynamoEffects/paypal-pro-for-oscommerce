@@ -14,7 +14,7 @@
 
 //---PayPal WPP Modification START ---//
   //Since the admin's configure.php file is STILL missing defines
-  include(DIR_FS_DOCUMENT_ROOT . DIR_WS_INCLUDES . 'configure.php');
+  include(DIR_FS_CATALOG . DIR_WS_INCLUDES . 'configure.php');
 
   include(DIR_WS_CLASSES . 'order.php');
   
