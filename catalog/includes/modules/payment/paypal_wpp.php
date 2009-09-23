@@ -1,6 +1,6 @@
 <?php
 /*
-  $Id: paypal_wpp.php,v 1.0.6 Brian Burton brian [at] dynamoeffects [dot] com Exp $
+  $Id: paypal_wpp.php,v 1.0.7 Brian Burton brian [at] dynamoeffects [dot] com Exp $
 
   Copyright (c) 2008, 2009 Brian Burton - brian [at] dynamoeffects [dot] com
 
@@ -18,7 +18,7 @@
       global $order;
       $this->code = 'paypal_wpp';
       $this->codeTitle = 'PayPal Website Payments Pro Plus';
-      $this->codeVersion = '1.0.6';
+      $this->codeVersion = '1.0.7';
       $this->debug_email = STORE_OWNER_EMAIL_ADDRESS;
       
       /* This variable stores the transaction request */
