@@ -8,7 +8,7 @@
 */
   chdir('../../');
   include('includes/application_top.php');
-  include(DIR_FS_DOCUMENT_ROOT . DIR_WS_INCLUDES . 'configure.php');
+  include(DIR_FS_CATALOG . DIR_WS_INCLUDES . 'configure.php');
   
   include(DIR_WS_CLASSES . 'order.php');
   include(DIR_WS_INCLUDES . 'paypal_wpp/paypal_wpp_include.php');
