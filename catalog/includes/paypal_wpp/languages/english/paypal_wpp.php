@@ -23,4 +23,8 @@
   define('TEXT_PAYPALWPP_ERROR_PAYMENT_CLASS', 'It appears that you are missing modifications within /includes/classes/payment.php.  Please reference the installation guide for assistance.');
   
   define('MODULE_PAYMENT_PAYPAL_DP_TEXT_ERROR_COUNTRY', 'Unfortunately the country of the address you selected is not currently one that we offer service to.  If you have any questions, please feel free to contact us.');
+  
+  define('TEXT_PAYPALWPP_3DS_SUBMITTING', 'You are now being sent to your bank\'s website to completle the checkout process.');
+  define('TEXT_PAYPALWPP_3DS_AUTH_SUCCESS', 'Security Authentication Successful!');
+  define('TEXT_PAYPALWPP_3DS_AUTH_RETURNING_TO_CHECKOUT', 'Your order is now being processed.');
 ?>

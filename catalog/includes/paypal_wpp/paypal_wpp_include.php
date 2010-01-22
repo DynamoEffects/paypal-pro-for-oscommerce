@@ -8,6 +8,7 @@
 */
   /* Filenames */
   define('FILENAME_PAYPAL_WPP', 'paypal_wpp.php');
+  define('FILENAME_PAYPAL_WPP_3DS', 'paypal_wpp_3ds.php');
   define('FILENAME_CVV2INFO', 'cvv2info.php');
   define('FILENAME_EXPRESS_CHECKOUT_IMG', 'https://www.paypal.com/en_US/i/btn/btn_xpressCheckout.gif');
   
@@ -258,6 +259,14 @@
         include('paypal_wpp_ipn.php');
       //}
       break;
+    case 'cardinal_centinel_auth':
+      if (tep_session_is_registered('cardinal_centinel') && isset($_POST['PaRes'])) {
+        require_once(DIR_WS_MODULES . 'payment/paypal_wpp.php');
+        $payment_module = new paypal_wpp;
+        
+        $payment_module->cardinal_centinel_before_process();
+      }
+      break;
   }
 
   $current_page = pathinfo($_SERVER['SCRIPT_NAME']);
@@ -337,6 +346,7 @@
           tep_session_unregister('paypal_error');
         }
       }
+      if (tep_session_is_registered('cardinal_centinel')) tep_session_unregister('cardinal_centinel');
       break;
     case FILENAME_CHECKOUT_CONFIRMATION:
       if ($ec_enabled) {

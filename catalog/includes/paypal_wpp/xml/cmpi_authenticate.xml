@@ -1,0 +1,10 @@
+<CardinalMPI>
+  <MsgType>cmpi_authenticate</MsgType>
+  <Version>1.7</Version>
+  <ProcessorId>CARDINAL_CENTINEL_PROCESSOR_ID</ProcessorId>
+  <MerchantId>CARDINAL_CENTINEL_MERCHANT_ID</MerchantId>
+  <TransactionPwd>CARDINAL_CENTINEL_TXPWD</TransactionPwd>
+  <TransactionType>C</TransactionType>
+  <TransactionId>CARDINAL_CENTINEL_TXID</TransactionId>
+  <PAResPayload>CARDINAL_CENTINEL_PAYLOAD</PAResPayload>
+</CardinalMPI>

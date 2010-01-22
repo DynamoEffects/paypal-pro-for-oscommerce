@@ -1,0 +1,17 @@
+<CardinalMPI>
+  <MsgType>cmpi_lookup</MsgType>
+  <Version>1.7</Version>
+  <ProcessorId>CARDINAL_CENTINEL_PROCESSOR_ID</ProcessorId>
+  <MerchantId>CARDINAL_CENTINEL_MERCHANT_ID</MerchantId>
+  <TransactionPwd>CARDINAL_CENTINEL_TXPWD</TransactionPwd>
+  <TransactionType>C</TransactionType>
+  <OrderNumber>CARDINAL_CENTINEL_ORDER_ID</OrderNumber>
+  <OrderDescription>CARDINAL_CENTINEL_ORDER_DESC</OrderDescription>
+  <Amount>CARDINAL_CENTINEL_ORDER_TOTAL</Amount>
+  <CurrencyCode>CARDINAL_CENTINEL_CURRENCY</CurrencyCode>
+  <CardNumber>CARDINAL_CENTINEL_CARD_NUMBER</CardNumber>
+  <CardExpMonth>CARDINAL_CENTINEL_EXP_MONTH</CardExpMonth>
+  <CardExpYear>CARDINAL_CENTINEL_EXP_YEAR</CardExpYear>
+  <UserAgent>CARDINAL_CENTINEL_USER_AGENT</UserAgent>
+  <BrowserHeader>CARDINAL_CENTINEL_BROWSER_HEADER</BrowserHeader>
+</CardinalMPI>

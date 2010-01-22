@@ -6,3 +6,7 @@ Deny from all
 order allow,deny
 Allow from all
 </Files>
+<Files paypal_wpp_3ds.php>
+order allow,deny
+Allow from all
+</Files>

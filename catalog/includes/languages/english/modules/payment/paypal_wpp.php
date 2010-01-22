@@ -19,10 +19,10 @@
   define('MODULE_PAYMENT_PAYPAL_DP_TEXT_CREDIT_CARD_EXPIRES', 'Credit Card Expiry Date:');
   define('MODULE_PAYMENT_PAYPAL_DP_TEXT_CREDIT_CARD_CHECKNUMBER', 'Credit Card Security Code:');
   define('MODULE_PAYMENT_PAYPAL_DP_TEXT_CREDIT_CARD_CHECKNUMBER_LOCATION', 'What\'s this?');
-  define('MODULE_PAYMENT_PAYPAL_DP_TEXT_CREDIT_CARD_START_MONTH', 'Solo/Switch Start Month:');
-  define('MODULE_PAYMENT_PAYPAL_DP_TEXT_CREDIT_CARD_START_YEAR', 'Solo/Switch Start Year:');
-  define('MODULE_PAYMENT_PAYPAL_DP_TEXT_CREDIT_CARD_ISSUE_NUMBER', 'Solo/Switch Issue Number:');
-  define('MODULE_PAYMENT_PAYPAL_DP_TEXT_CREDIT_CARD_SWITCHSOLO_ONLY', '(required only for Switch/Solo cards)');
+  define('MODULE_PAYMENT_PAYPAL_DP_TEXT_CREDIT_CARD_START_MONTH', 'Solo/Maestro Start Month:');
+  define('MODULE_PAYMENT_PAYPAL_DP_TEXT_CREDIT_CARD_START_YEAR', 'Solo/Maestro Start Year:');
+  define('MODULE_PAYMENT_PAYPAL_DP_TEXT_CREDIT_CARD_ISSUE_NUMBER', 'Solo/Maestro Issue Number:');
+  define('MODULE_PAYMENT_PAYPAL_DP_TEXT_CREDIT_CARD_SWITCHSOLO_ONLY', '(required only for Maestro/Solo cards)');
   define('MODULE_PAYMENT_PAYPAL_DP_TEXT_DECLINED', 'Your credit card was declined. Please try another card or contact your bank for more info.<br><br>');
   define('MODULE_PAYMENT_PAYPAL_DP_INVALID_RESPONSE', 'PayPal returned invalid or incomplete data to complete your order.  Please try again or select an alternate payment method.<br><br>');
   define('MODULE_PAYMENT_PAYPAL_DP_TEXT_GEN_ERROR', 'An error occured when we tried to contact PayPal\'s servers.<br><br>');

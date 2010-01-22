@@ -149,7 +149,7 @@
         $accepted_card_types[] = array('id' => 'Amex', 'text' => 'American Express');
       } else {
         $accepted_card_types[] = array('id' => 'Solo', 'text' => 'Solo');
-        $accepted_card_types[] = array('id' => 'Switch', 'text' => 'Switch');
+        $accepted_card_types[] = array('id' => 'Maestro', 'text' => 'Maestro');
       }
 
       $selection = array('id' => $this->code,
@@ -213,11 +213,11 @@
           $this->away_with_you(MODULE_PAYMENT_PAYPAL_DP_TEXT_CARD_ERROR . '<br><br>' . $error, false, FILENAME_CHECKOUT_PAYMENT);
         }
   
-        if ($cc_validation->cc_type == 'Switch/Solo') {
-          if ($_POST['paypalwpp_cc_type'] == 'Solo' || $_POST['paypalwpp_cc_type'] == 'Switch') {
+        if ($cc_validation->cc_type == 'Maestro/Solo') {
+          if ($_POST['paypalwpp_cc_type'] == 'Solo' || $_POST['paypalwpp_cc_type'] == 'Maestro') {
             $this->cc_card_type = $_POST['paypalwpp_cc_type'];
           } else {
-            $this->cc_card_type = 'Switch';
+            $this->cc_card_type = 'Maestro';
           }
         } else {
           $this->cc_card_type = $cc_validation->cc_type;
@@ -410,6 +410,12 @@
     function wpp_execute_transaction($type, $data) {
       global $order;
       
+      $service = 'paypal';
+      
+      if (in_array($type, array('cmpi_lookup', 'cmpi_authenticate'))) {
+        $service = 'cardinal';
+      }
+      
       //Make sure cURL exists
       if (!function_exists('curl_init')) {
         $this->away_with_you(MODULE_PAYMENT_PAYPAL_DP_CURL_NOT_INSTALLED, true);
@@ -425,8 +431,8 @@
       $data['PAYPAL_PASSWORD'] = MODULE_PAYMENT_PAYPAL_DP_API_PASSWORD;
       $data['PAYPAL_VERSION'] = '2.0';
       
-      //Solo and Switch cards can only be authorized and the currency must be GBP
-      if ($order->info['cc_type'] == 'Switch' || $order->info['cc_type'] == 'Solo') {
+      //Solo and Maestro cards can only be authorized and the currency must be GBP
+      if ($order->info['cc_type'] == 'Maestro' || $order->info['cc_type'] == 'Solo') {
         $data['PAYPAL_PAYMENT_ACTION'] = 'Authorization';
         $data['PAYPAL_CURRENCY'] = 'GBP';
         $this->transaction_log['transaction_type'] = 'AUTHORIZATION';
@@ -446,12 +452,16 @@
       $data['PAYPAL_MERCHANT_SESSION_ID'] = tep_session_id();
       $data['PAYPAL_IP_ADDRESS'] = $_SERVER['REMOTE_ADDR'];
 
-      if (MODULE_PAYMENT_PAYPAL_DP_SERVER == 'sandbox') {
-        $paypal_url = "https://api.sandbox.paypal.com/2.0/"; 
+      if ($service == 'paypal') {
+        if (MODULE_PAYMENT_PAYPAL_DP_SERVER == 'sandbox') {
+          $service_url = "https://api.sandbox.paypal.com/2.0/"; 
+        } else {
+          $service_url = "https://api.paypal.com/2.0/"; 
+        }
       } else {
-        $paypal_url = "https://api.paypal.com/2.0/"; 
+        $service_url = MODULE_PAYMENT_PAYPAL_DP_CC_TXURL;
       }
-
+      
       //Make sure the XML file exists
       if (file_exists($this->resources . 'xml/' . $type . '.xml')) {
         //Suck in XML framework
@@ -483,10 +493,16 @@
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
         curl_setopt($ch, CURLOPT_TIMEOUT, 180);
-        curl_setopt($ch, CURLOPT_SSLCERTTYPE, "PEM"); 
-        curl_setopt($ch, CURLOPT_SSLCERT, MODULE_PAYMENT_PAYPAL_DP_CERT_PATH);
-        curl_setopt($ch, CURLOPT_URL, $paypal_url); 
-        curl_setopt($ch, CURLOPT_POST, 1); 
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_URL, $service_url); 
+        
+        if ($service == 'paypal') {
+          curl_setopt($ch, CURLOPT_SSLCERTTYPE, "PEM"); 
+          curl_setopt($ch, CURLOPT_SSLCERT, MODULE_PAYMENT_PAYPAL_DP_CERT_PATH);
+        } elseif ($service == 'cardinal') {
+          $xml_contents = 'cmpi_msg=' . urlencode($xml_contents);
+        }
+        
         curl_setopt($ch, CURLOPT_POSTFIELDS, $xml_contents); 
         
         $response = curl_exec($ch);
@@ -497,8 +513,14 @@
         if ($response != '') {
           curl_close($ch);
           //Simple check to make sure that this is a valid response
-          if (strpos($response, 'SOAP-ENV') === false) {
-            $response = false;
+          if ($service == 'paypal') {
+            if (strpos($response, 'SOAP-ENV') === false) {
+              $response = false;
+            }
+          } elseif ($service == 'cardinal') {
+            if (strpos($response, 'CardinalMPI') === false) {
+              $response = false;
+            }
           }
           if ($response) {
             //Convert the XML into an easy-to-use associative array
@@ -1519,13 +1541,7 @@
          * playing with the post vars or they didn't get passed to 
          * checkout_confirmation.php
         */
-        if ($cc_type != 'Visa' && 
-            $cc_type != 'MasterCard' && 
-            $cc_type != 'Discover' && 
-            $cc_type != 'Amex' && 
-            $cc_type != 'Switch' &&
-            $cc_type != 'Solo') 
-        {
+        if (!in_array($cc_type, array('Visa', 'MasterCard', 'Discover', 'Amex', 'Maestro', 'Solo'))) {
           $this->away_with_you(MODULE_PAYMENT_PAYPAL_DP_TEXT_BAD_CARD, false, FILENAME_CHECKOUT_PAYMENT);
           return false;
         }
@@ -1540,7 +1556,7 @@
         //These have to be set to empty values so that the placeholders in the XML will get replaced
         $order_info['PAYPAL_CC_UK_DATA'] = '';
         
-        //Switch/Solo specific fields
+        //Maestro/Solo specific fields
         if (MODULE_PAYMENT_PAYPAL_DP_UK_ENABLED == 'Yes') {
           $order_info['PAYPAL_CC_UK_DATA']  = '<StartMonth>' . substr(preg_replace('/[^0-9]/i', '', $_POST['paypalwpp_cc_start_month']), 0, 2) . '</StartMonth>';
           $order_info['PAYPAL_CC_UK_DATA'] .= '<StartYear>' . substr(preg_replace('/[^0-9]/i', '', $_POST['paypalwpp_cc_start_year']), 0, 4) . '</StartYear>';
@@ -1549,11 +1565,9 @@
           }
         }
         
-        /* Begin optional, thus unused data fields */
-        
-        
+        /* Begin optional, unused data fields */
         $order_info['PAYPAL_BUTTON_SOURCE'] = '';
-        /* End optional, thus unused data fields */
+        /* End optional, unused data fields */
       
         //Billing information
         $order_info['PAYPAL_FIRST_NAME'] = $cc_first_name;
@@ -1573,6 +1587,7 @@
         $order_info['PAYPAL_CC_EXP_YEAR'] = $cc_expdate_year;
         $order_info['PAYPAL_CC_CVV2'] = $cc_checkcode;
 
+        $this->cardinal_centinel_before_process(&$order_info);
         //Make the call and (hopefully) return an array of information
         $final_req = $this->wpp_execute_transaction('doDirectPayment', $order_info);
 
@@ -1820,29 +1835,33 @@
         $this->transaction_log['transaction_type'] = 'CHARGE';
       }
       
-      tep_db_query("INSERT INTO " . TABLE_ORDERS_STATUS_HISTORY_TRANSACTIONS . " (
-                      `orders_status_history_id`,
-                      `transaction_id`,
-                      `transaction_type`,
-                      `payment_type`,
-                      `payment_status`,
-                      `transaction_amount`,
-                      `module_code`,
-                      `transaction_avs`,
-                      `transaction_cvv2`,
-                      `transaction_msgs`
-                     ) VALUES (
-                      " . (int)$history['id'] . ",
-                      '" . tep_db_input($this->transaction_log['transaction_id']) . "',
-                      '" . strtoupper($this->transaction_log['transaction_type']) . "',
-                      '" . tep_db_input(strtoupper($this->transaction_log['payment_type'])) . "',
-                      '" . tep_db_input(strtoupper($this->transaction_log['payment_status'])) . "',
-                      " . $this->total_amount . ",
-                      '" . $this->code . "',
-                      '" . tep_db_input($this->transaction_log['avs']) . "',
-                      '" . tep_db_input($this->transaction_log['cvv2']) . "',
-                      '" . tep_db_input($this->transaction_log['transaction_msgs']) . "'
-                     )");
+      tep_db_query(
+        "INSERT INTO " . TABLE_ORDERS_STATUS_HISTORY_TRANSACTIONS . " (" .
+        "  `orders_status_history_id`," .
+        "  `transaction_id`," .
+        "  `transaction_type`," .
+        "  `payment_type`," .
+        "  `payment_status`," .
+        "  `transaction_amount`," .
+        "  `module_code`," .
+        "  `transaction_avs`," .
+        "  `transaction_cvv2`," .
+        "  `transaction_msgs`" .
+        ") VALUES (" .
+          (int)$history['id'] . "," .
+        "  '" . tep_db_input($this->transaction_log['transaction_id']) . "'," .
+        "  '" . strtoupper($this->transaction_log['transaction_type']) . "'," .
+        "  '" . tep_db_input(strtoupper($this->transaction_log['payment_type'])) . "'," .
+        "  '" . tep_db_input(strtoupper($this->transaction_log['payment_status'])) . "'," .
+          $this->total_amount . "," .
+        "  '" . $this->code . "'," .
+        "  '" . tep_db_input($this->transaction_log['avs']) . "'," .
+        "  '" . tep_db_input($this->transaction_log['cvv2']) . "'," .
+        "  '" . tep_db_input($this->transaction_log['transaction_msgs']) . "'" .
+        ")"
+      );
+      
+      if (tep_session_is_registered('cardinal_centinel')) tep_session_unregister('cardinal_centinel');
     }
 
     /*
@@ -1909,6 +1928,13 @@
       tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, use_function, date_added) values ('Completed Order Status', 'MODULE_PAYMENT_PAYPAL_DP_COMPLETED_ORDER_STATUS_ID', '0', 'When the payment status is reported as \"Completed,\" what should the order status be?', '6', '23', 'tep_cfg_pull_down_order_statuses(', 'tep_get_order_status_name', now())");
       tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, use_function, date_added) values ('Refunded/Reversed Order Status', 'MODULE_PAYMENT_PAYPAL_DP_REVERSED_ORDER_STATUS_ID', '0', 'When the payment status is reported as \"Refunded,\" \"Reversed,\" \"Canceled,\" or similar, what should the order status be?', '6', '24', 'tep_cfg_pull_down_order_statuses(', 'tep_get_order_status_name', now())");
 
+      /* Centinal Commerce Configurations */
+      tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Cardinal Centinel: Enable/Disable', 'MODULE_PAYMENT_PAYPAL_DP_CC_ENABLE', 'No', 'Enable 3D Secure Buyer Authentication via the Cardinal Centinel.', '6', '26',  'tep_cfg_select_option(array(\'Yes\', \'No\'), ', now())");
+      tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Cardinal Centinel: Transaction URL', 'MODULE_PAYMENT_PAYPAL_DP_CC_TXURL', 'https://centineltest.cardinalcommerce.com/maps/txns.asp', 'Transaction URL provided by Cardinal Commerce.', '6', '27', now())");
+      tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Cardinal Centinel: Processor ID', 'MODULE_PAYMENT_PAYPAL_DP_CC_PROCESSOR_ID', '', 'Enter the Processor ID provided by Centinal Commerce', '6', '28', now())");
+      tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Cardinal Centinel: Merchant ID', 'MODULE_PAYMENT_PAYPAL_DP_CC_MERCHANT_ID', '', 'Enter the Merchant ID provided by Centinal Commerce', '6', '29', now())");
+      tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Cardinal Centinel: Transaction Password', 'MODULE_PAYMENT_PAYPAL_DP_CC_TXPWD', '', 'Enter the Transaction Password provided by Centinal Commerce', '6', '30', now())");
+      tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Cardinal Centinel: Only Accept Chargeback Protected Orders', 'MODULE_PAYMENT_PAYPAL_DP_CC_ACCEPT_ONLY_CHARGEBACK_PROTECTED', 'No', 'Do you only want to accept chargeback protected orders?', '6', '31', 'tep_cfg_select_option(array(\'Yes\', \'No\'), ', now())");
       //Install the DB columns if necessary
       $col_query = tep_db_query("SHOW COLUMNS FROM " . TABLE_CUSTOMERS);
       $found = array(false, false);
@@ -1952,7 +1978,334 @@
      * Configuration keys
      */
     function keys() {
-      return array('MODULE_PAYMENT_PAYPAL_DP_STATUS', 'MODULE_PAYMENT_PAYPAL_DP_DEBUGGING', 'MODULE_PAYMENT_PAYPAL_DP_PAYMENT_ACTION', 'MODULE_PAYMENT_PAYPAL_DP_SERVER', 'MODULE_PAYMENT_PAYPAL_DP_CERT_PATH', 'MODULE_PAYMENT_PAYPAL_DP_API_USERNAME', 'MODULE_PAYMENT_PAYPAL_DP_API_PASSWORD', 'MODULE_PAYMENT_PAYPAL_DP_PROXY', 'MODULE_PAYMENT_PAYPAL_DP_UK_ENABLED', 'MODULE_PAYMENT_PAYPAL_DP_CHECK_CVV2', 'MODULE_PAYMENT_PAYPAL_EC_ENABLED', 'MODULE_PAYMENT_PAYPAL_EC_IPN_URL', 'MODULE_PAYMENT_PAYPAL_EC_ADDRESS_OVERRIDE', 'MODULE_PAYMENT_PAYPAL_DP_BUTTON_PAYMENT_PAGE', 'MODULE_PAYMENT_PAYPAL_DP_REQ_VERIFIED', 'MODULE_PAYMENT_PAYPAL_DP_CONFIRMED', 'MODULE_PAYMENT_PAYPAL_DP_DISPLAY_PAYMENT_PAGE', 'MODULE_PAYMENT_PAYPAL_DP_NEW_ACCT_NOTIFY', 'MODULE_PAYMENT_PAYPAL_EC_PAGE_STYLE', 'MODULE_PAYMENT_PAYPAL_DP_CURRENCY', 'MODULE_PAYMENT_PAYPAL_DP_SORT_ORDER', 'MODULE_PAYMENT_PAYPAL_DP_ZONE', 'MODULE_PAYMENT_PAYPAL_DP_PENDING_ORDER_STATUS_ID', 'MODULE_PAYMENT_PAYPAL_DP_COMPLETED_ORDER_STATUS_ID','MODULE_PAYMENT_PAYPAL_DP_REVERSED_ORDER_STATUS_ID');
+      return array(
+        'MODULE_PAYMENT_PAYPAL_DP_STATUS', 
+        'MODULE_PAYMENT_PAYPAL_DP_DEBUGGING', 
+        'MODULE_PAYMENT_PAYPAL_DP_PAYMENT_ACTION', 
+        'MODULE_PAYMENT_PAYPAL_DP_SERVER', 
+        'MODULE_PAYMENT_PAYPAL_DP_CERT_PATH', 
+        'MODULE_PAYMENT_PAYPAL_DP_API_USERNAME', 
+        'MODULE_PAYMENT_PAYPAL_DP_API_PASSWORD', 
+        'MODULE_PAYMENT_PAYPAL_DP_PROXY', 
+        'MODULE_PAYMENT_PAYPAL_DP_UK_ENABLED', 
+        'MODULE_PAYMENT_PAYPAL_DP_CHECK_CVV2', 
+        'MODULE_PAYMENT_PAYPAL_EC_ENABLED', 
+        'MODULE_PAYMENT_PAYPAL_EC_IPN_URL', 
+        'MODULE_PAYMENT_PAYPAL_EC_ADDRESS_OVERRIDE', 
+        'MODULE_PAYMENT_PAYPAL_DP_BUTTON_PAYMENT_PAGE', 
+        'MODULE_PAYMENT_PAYPAL_DP_REQ_VERIFIED', 
+        'MODULE_PAYMENT_PAYPAL_DP_CONFIRMED', 
+        'MODULE_PAYMENT_PAYPAL_DP_DISPLAY_PAYMENT_PAGE', 
+        'MODULE_PAYMENT_PAYPAL_DP_NEW_ACCT_NOTIFY', 
+        'MODULE_PAYMENT_PAYPAL_EC_PAGE_STYLE', 
+        'MODULE_PAYMENT_PAYPAL_DP_CURRENCY', 
+        'MODULE_PAYMENT_PAYPAL_DP_SORT_ORDER', 
+        'MODULE_PAYMENT_PAYPAL_DP_ZONE', 
+        'MODULE_PAYMENT_PAYPAL_DP_PENDING_ORDER_STATUS_ID', 
+        'MODULE_PAYMENT_PAYPAL_DP_COMPLETED_ORDER_STATUS_ID',
+        'MODULE_PAYMENT_PAYPAL_DP_REVERSED_ORDER_STATUS_ID',
+        'MODULE_PAYMENT_PAYPAL_DP_CC_ENABLE',
+        'MODULE_PAYMENT_PAYPAL_DP_CC_TXURL',
+        'MODULE_PAYMENT_PAYPAL_DP_CC_PROCESSOR_ID',
+        'MODULE_PAYMENT_PAYPAL_DP_CC_MERCHANT_ID',
+        'MODULE_PAYMENT_PAYPAL_DP_CC_TXPWD',
+        'MODULE_PAYMENT_PAYPAL_DP_CC_ACCEPT_ONLY_CHARGEBACK_PROTECTED'
+      );
     }
     
-}
+    
+    /***************************************************************
+     ****************** CARDINAL CENTINEL CODE *********************
+     ***************************************************************/
+    
+    /*
+     * Enable the Cardinal Centinel features?
+     */
+    function cardinal_centinel_enabled($cc_type = '') {
+      if (MODULE_PAYMENT_PAYPAL_DP_CC_ENABLE != 'Yes') return false;
+      if (trim(MODULE_PAYMENT_PAYPAL_DP_CC_TXURL) == '') return false;
+      if (trim(MODULE_PAYMENT_PAYPAL_DP_CC_PROCESSOR_ID) == '') return false;
+      if (trim(MODULE_PAYMENT_PAYPAL_DP_CC_MERCHANT_ID) == '') return false;
+      if (trim(MODULE_PAYMENT_PAYPAL_DP_CC_TXPWD) == '') return false;
+      
+      if($cc_type != '' && !in_array($cc_type, array('Visa', 'MasterCard', 'Maestro'))) return false;
+      
+      return true;
+    }
+    
+    /*
+     * Parse and return errors from Cardinal Commerce
+     */
+    function cardinal_centinel_parse_errors($error_codes, $error_desc) {
+      $error_codes = explode(',', $error_codes);
+      $error_desc = explode(',', $error_desc);
+      
+      $errors = array();
+      
+      $error_count = count($error_codes);
+      
+      for ($x = 0; $x < $error_count; $x++) {
+        $errors[] = array(
+          'id' => trim($error_codes[$x]),
+          'text' => trim($error_desc[$x])
+        );
+      }
+      
+      return $errors;
+    }
+     
+    
+    /* 
+     * Get ISO4217 code number for currency
+     */
+    function cardinal_centinel_currency_code($currency = '') {
+      if ($currency == '') return false;
+      
+      $currency_codes = array(
+        'ADP' => '020','AED' => '784','AFA' => '004','ALL' => '008','AMD' => '051','ANG' => '532',
+        'AON' => '024','ARS' => '032','ATS' => '040','AUD' => '036','AWG' => '533','AZM' => '031',
+        'BAM' => '977','BBD' => '052','BDT' => '050','BEF' => '056','BGL' => '100','BHD' => '048',
+        'BIF' => '108','BMD' => '060','BND' => '096','BOB' => '068','BRL' => '986','BSD' => '044',
+        'BTN' => '064','BWP' => '072','BYR' => '974','BZD' => '084','CAD' => '124','CDF' => '976',
+        'CHF' => '756','CLP' => '152','CNY' => '156','COP' => '170','CRC' => '188','CUP' => '192',
+        'CVE' => '132','CYP' => '196','CZK' => '203','DEM' => '276','DJF' => '262','DKK' => '208',
+        'DOP' => '214','DZD' => '012','EEK' => '233','EGP' => '818','ERN' => '232','ETB' => '230',
+        'EUR' => '978','FIM' => '246','FJD' => '242','FKP' => '238','FRF' => '250','GBP' => '826',
+        'GEL' => '981','GHC' => '288','GIP' => '292','GMD' => '270','GNF' => '324','GTQ' => '320',
+        'GWP' => '624','GYD' => '328','HKD' => '344','HNL' => '340','HRK' => '191','HTG' => '332',
+        'HUF' => '348','IDR' => '360','IEP' => '372','ILS' => '376','INR' => '356','IQD' => '368',
+        'IRR' => '364','ISK' => '352','ITL' => '380','JMD' => '388','JOD' => '400','JPY' => '392',
+        'KES' => '404','KGS' => '417','KHR' => '116','KMF' => '174','KPW' => '408','KRW' => '410',
+        'KWD' => '414','KYD' => '136','KZT' => '398','LAK' => '418','LBP' => '422','LKR' => '144',
+        'LRD' => '430','LSL' => '426','LTL' => '440','LUF' => '442','LVL' => '428','LYD' => '434',
+        'MAD' => '504','MDL' => '498','MGF' => '450','MKD' => '807','MMK' => '104','MNT' => '496',
+        'MOP' => '446','MRO' => '478','MTL' => '470','MUR' => '480','MVR' => '462','MWK' => '454',
+        'MXN' => '484','MYR' => '458','MZM' => '508','NAD' => '516','NGN' => '566','NIO' => '558',
+        'NLG' => '528','NOK' => '578','NPR' => '524','NZD' => '554','OMR' => '512','PAB' => '590',
+        'PEN' => '604','PGK' => '598','PHP' => '608','PKR' => '586','PLN' => '985','PTE' => '620',
+        'PYG' => '600','QAR' => '634','ROL' => '642','RUB' => '643','RUR' => '810','RWF' => '646',
+        'SAR' => '682','SBD' => '090','SCR' => '690','SDD' => '736','SEK' => '752','SGD' => '702',
+        'SHP' => '654','SIT' => '705','SKK' => '703','SLL' => '694','SOS' => '706','SRG' => '740',
+        'STD' => '678','SVC' => '222','SYP' => '760','SZL' => '748','THB' => '764','TJS' => '972',
+        'TMM' => '795','TND' => '788','TOP' => '776','TPE' => '626','TRL' => '792','TTD' => '780',
+        'TWD' => '901','TZS' => '834','UAH' => '980','UGX' => '800','USD' => '840','UYU' => '858',
+        'UZS' => '860','VEB' => '862','VND' => '704','VUV' => '548','WST' => '882','XAF' => '950',
+        'XCD' => '951','XOF' => '952','XPF' => '953','YER' => '886','YUM' => '891','ZAR' => '710',
+        'ZMK' => '894','ZWD' => '716'
+      );
+      
+      /* If currency code is an integer, format it correctly */
+      if (ctype_digit($currency) || is_int($currency)) {
+        
+        if(strlen($currency) == 1) {
+          $currency = '00' . $currency;
+        } elseif (strlen($currency) == 2) {
+          $currency = '0' . $currency;
+        } elseif (strlen($currency) > 3) {
+          $currency = substr(preg_replace('/[^0-9]/', '', $currency), 0, 3);
+        }
+        
+        /* If the currency code is valid, return it properly formatted */
+        if (in_array($currency, $currency_codes)) {
+          return $currency;
+        }
+      /* Otherwise get the code by string */
+      } else {
+        $currency = strtoupper($currency);
+        
+        if (array_key_exists($currency, $currency_codes)) {
+          return $currency_codes[$currency];
+        }
+      }
+
+      return false;
+    }
+    
+    /*
+     * Transaction amounts must be in cents, so format amounts correctly
+     */
+    function cardinal_centinel_format_currency($amount) {
+      $amount = (float)preg_replace('/[^0-9\.]/', '', $amount);
+      
+      return round(($amount * 100), 0);
+    }
+    
+    function cardinal_centinel_before_process($order_info = '') {
+      global $order;
+      
+      $order_info['CARDINAL_CENTINEL_3DS'] = '';
+      
+      if ($this->cardinal_centinel_enabled($order->info['cc_type'])) {
+        $cardinal_centinel_process = 'lookup';
+        
+        if (isset($_SESSION['cardinal_centinel']) && is_array($_SESSION['cardinal_centinel'])) {
+          if ($_SESSION['cardinal_centinel']['auth_status'] === true) {
+            $xml  = '<ThreeDSecureRequest>';
+            $xml .= '<AuthStatus3ds>Y</AuthStatus3ds>';
+            $xml .= '<MpiVendor3ds>Y</MpiVendor3ds>';
+            $xml .= '<Cavv>' . $_SESSION['cardinal_centinel']['auth_cavv'] . '</Cavv>';
+            $xml .= '<Eci3ds>' . $_SESSION['cardinal_centinel']['auth_eci'] . '</Eci3ds>';
+            $xml .= '<XID>' . $_SESSION['cardinal_centinel']['auth_xid'] . '</XID>';
+            $xml .= '</ThreeDSecureRequest>';
+            
+            $order_info['CARDINAL_CENTINEL_3DS'] = $xml;
+            
+            return false;
+          } elseif (isset($_POST['PaRes']) && $_SESSION['cardinal_centinel']['enrolled'] === true) {
+            $cardinal_centinel_process = 'authenticate';
+          } else {
+            if (tep_session_is_registered('cardinal_centinel')) tep_session_unregister('cardinal_centinel');
+          }
+        }
+        
+        $auth_info = array(
+          'CARDINAL_CENTINEL_PROCESSOR_ID' => MODULE_PAYMENT_PAYPAL_DP_CC_PROCESSOR_ID,
+          'CARDINAL_CENTINEL_MERCHANT_ID' => MODULE_PAYMENT_PAYPAL_DP_CC_MERCHANT_ID,
+          'CARDINAL_CENTINEL_TXPWD' => MODULE_PAYMENT_PAYPAL_DP_CC_TXPWD
+        );
+        
+        if ($cardinal_centinel_process == 'lookup') {
+          $this->cardinal_centinel_lookup($auth_info, &$order_info);
+        } else {
+          $this->cardinal_centinel_authenticate($auth_info, &$order_info);
+        }
+      }
+    }
+    
+    function cardinal_centinel_lookup($auth_info, $order_info) {
+      $auth_info = array_merge($auth_info, array(
+        'CARDINAL_CENTINEL_ORDER_ID' => tep_session_id(),
+        'CARDINAL_CENTINEL_ORDER_DESC' => $order_info['PAYPAL_ORDER_DESCRIPTION'],
+        'CARDINAL_CENTINEL_ORDER_TOTAL' => $this->cardinal_centinel_format_currency($order_info['PAYPAL_ORDER_TOTAL']),
+        'CARDINAL_CENTINEL_CURRENCY' => $order_info['PAYPAL_CURRENCY'],
+        'CARDINAL_CENTINEL_CARD_NUMBER' => $order_info['PAYPAL_CC_NUMBER'],
+        'CARDINAL_CENTINEL_EXP_MONTH' => (strlen($order_info['PAYPAL_CC_EXP_MONTH']) < 2 ? '0' : '') . $order_info['PAYPAL_CC_EXP_MONTH'],
+        'CARDINAL_CENTINEL_EXP_YEAR' => (strlen($order_info['PAYPAL_CC_EXP_YEAR']) < 4 ? '20' : '') . $order_info['PAYPAL_CC_EXP_YEAR'],
+        'CARDINAL_CENTINEL_USER_AGENT' => $_SERVER['HTTP_USER_AGENT'],
+        'CARDINAL_CENTINEL_BROWSER_HEADER' => $_SERVER['HTTP_ACCEPT'],
+        'CARDINAL_CENTINEL_CURRENCY' => $this->cardinal_centinel_currency_code($this->wpp_get_currency())
+      ));
+    
+      $cmpi_lookup = $this->wpp_execute_transaction('cmpi_lookup', $auth_info);
+      
+      $lookup_errors = false;
+      
+      if (is_array($cmpi_lookup['CardinalMPI'])) {
+        $lookup_response = $cmpi_lookup['CardinalMPI'][0];
+        
+        if ($lookup_response['ErrorNo'] != '0') {
+          $lookup_errors = $this->cardinal_centinel_parse_errors($lookup_response['ErrorNo'], $lookup_response['ErrorDesc']);
+        }
+      } else {
+        $lookup_errors = array(array(
+          'id' => '99999',
+          'ErrorDesc' => 'Invalid response received from Cardinal Commerce'
+        ));
+        //TODO: Add error handling if there is no response
+      }
+      
+      if (is_array($lookup_errors)) {
+        $error_text = '<ul>';
+        
+        foreach ($lookup_errors as $err) {
+          $error_text .= '<li>' . $err['text'] . ' (Error ' . $err['id'] . ')</li>';
+        }
+        
+        $error_text .= '</ul>';
+        
+        if (tep_session_is_registered('cardinal_centinel')) tep_session_unregister('cardinal_centinel');
+        $this->away_with_you(MODULE_PAYMENT_PAYPAL_DP_TEXT_DECLINED . $error_text, false, FILENAME_CHECKOUT_PAYMENT);
+      }
+      
+      $result = array(
+        'enrolled' => ($lookup_response['Enrolled'] == 'Y' ? true : false),
+        'transaction_id' => $lookup_response['TransactionId'],
+        'acs_url' => $lookup_response['ACSUrl'],
+        'spa_hidden_fields' => $lookup_response['SPAHiddenFields'],
+        'payload' => $lookup_response['Payload']
+      );
+      
+      /* If only orders with chargeback protection are allowed, only allow Visa and JCB cards */
+      if (MODULE_PAYMENT_PAYPAL_DP_CC_ACCEPT_ONLY_CHARGEBACK_PROTECTED == 'Yes') {
+        if (!$result['enrolled'] && !in_array($order_info['PAYPAL_CC_TYPE'], array('Visa', 'JCB'))) {
+          if (tep_session_is_registered('cardinal_centinel')) tep_session_unregister('cardinal_centinel');
+          $this->away_with_you(MODULE_PAYMENT_PAYPAL_DP_TEXT_DECLINED, false, FILENAME_CHECKOUT_PAYMENT);
+        }
+      }
+      
+      if ($result['enrolled'] && trim($result['acs_url']) != '') {
+        if (!tep_session_is_registered('cardinal_centinel')) tep_session_register('cardinal_centinel');
+        $_SESSION['cardinal_centinel'] = $result;
+        
+        $_SESSION['cardinal_centinel']['post'] = $_POST;
+        
+        tep_redirect(tep_href_link(DIR_WS_INCLUDES . 'paypal_wpp/' . FILENAME_PAYPAL_WPP_3DS, '', 'SSL'));
+        exit;
+      }
+      
+      return false;
+    }
+    
+    function cardinal_centinel_authenticate($auth_info) {
+      global $language;
+      
+      include(DIR_WS_LANGUAGES . $language . '/modules/payment/paypal_wpp.php');
+      
+      $auth_info = array_merge($auth_info, array(
+        'CARDINAL_CENTINEL_TXID' => $_SESSION['cardinal_centinel']['transaction_id'],
+        'CARDINAL_CENTINEL_PAYLOAD' => $_POST['PaRes']
+      ));
+      
+      $cmpi_authenticate = $this->wpp_execute_transaction('cmpi_authenticate', $auth_info);
+      
+      $auth_errors = false;
+      
+      if (is_array($cmpi_authenticate['CardinalMPI'])) {
+        $auth_response = $cmpi_authenticate['CardinalMPI'][0];
+        
+        if ($auth_response['ErrorNo'] != '0') {
+          $auth_errors = $this->cardinal_centinel_parse_errors($auth_response['ErrorNo'], $auth_response['ErrorDesc']);
+        }
+      } else {
+        $auth_errors = array(array(
+          'id' => '99999',
+          'ErrorDesc' => 'Invalid response received from Cardinal Commerce'
+        ));
+      }
+      
+      if (is_array($auth_errors)) {
+        $error_text = '<ul>';
+        
+        foreach ($auth_errors as $err) {
+          $error_text .= '<li>' . $err['text'] . ' (Error ' . $err['id'] . ')</li>';
+        }
+        
+        $error_text .= '</ul>';
+        
+        if (tep_session_is_registered('cardinal_centinel')) tep_session_unregister('cardinal_centinel');
+        $this->away_with_you(MODULE_PAYMENT_PAYPAL_DP_TEXT_DECLINED . $error_text, false, FILENAME_CHECKOUT_PAYMENT);
+      }
+      
+      /* Check Issuer's Authentication */
+      if (strtoupper($auth_response['PAResStatus']) == 'N') {
+        if (tep_session_is_registered('cardinal_centinel')) tep_session_unregister('cardinal_centinel');
+        $this->away_with_you(MODULE_PAYMENT_PAYPAL_DP_TEXT_DECLINED, false, FILENAME_CHECKOUT_PAYMENT);
+      }
+      
+      if (strtoupper($auth_response['PAResStatus']) == 'U' && MODULE_PAYMENT_PAYPAL_DP_CC_ACCEPT_ONLY_CHARGEBACK_PROTECTED == 'Yes') {
+        if (tep_session_is_registered('cardinal_centinel')) tep_session_unregister('cardinal_centinel');
+        $this->away_with_you(MODULE_PAYMENT_PAYPAL_DP_TEXT_DECLINED, false, FILENAME_CHECKOUT_PAYMENT);
+      }
+      
+      /* Signature Verification */
+      if (strtoupper($auth_response['SignatureVerification']) == 'N') {
+        if (tep_session_is_registered('cardinal_centinel')) tep_session_unregister('cardinal_centinel');
+        $this->away_with_you(MODULE_PAYMENT_PAYPAL_DP_TEXT_DECLINED, false, FILENAME_CHECKOUT_PAYMENT);
+      }
+
+      $_SESSION['cardinal_centinel']['auth_status'] = true;
+      $_SESSION['cardinal_centinel']['auth_xid'] = $auth_response['Xid'];
+      $_SESSION['cardinal_centinel']['auth_cavv'] = $auth_response['Cavv'];
+      $_SESSION['cardinal_centinel']['auth_eci'] = $auth_response['EciFlag'];
+    }
+  }
