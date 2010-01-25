@@ -1,2 +1,0 @@
-- Doesn't work with coupons with free shipping
-- Integrate PayPal's 3-D Secure (MasterCard SecureCode, Verified by Visa, etc.) solution.  Required for UK merchants accepting Maestro cards.  Goes live around 1 Sep 09, required by 1 Jan 10.
