@@ -752,7 +752,8 @@
       if ($transaction['transaction_id']) {
         $transaction_info = "Transaction ID: " .
           "<a href=\"https://www.paypal.com/" . (MODULE_PAYMENT_PAYPAL_DP_UK_ENABLED == 'Yes' ? 'uk' : 'us') . 
-          "/cgi-bin/webscr?cmd=_view-a-trans&id=" . $transaction['transaction_id'] . "\" style=\"font-weight: bold\">" . 
+          "/cgi-bin/webscr?cmd=_view-a-trans&id=" . $transaction['transaction_id'] . 
+          "\" target=\"_BLANK\" style=\"font-weight: bold\">" . 
           $transaction['transaction_id'] . "</a><br />";
       }
       
