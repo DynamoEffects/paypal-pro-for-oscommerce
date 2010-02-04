@@ -632,10 +632,9 @@
       }
       $redirect_attr = 'ec_cancel=1';
       
-      
       //These strings need to have ampersands escaped
-      $order_info['PAYPAL_RETURN_URL'] = htmlspecialchars(tep_href_link(basename($_SERVER['SCRIPT_NAME']), 'action=express_checkout', 'SSL'));
-      $order_info['PAYPAL_CANCEL_URL'] = htmlspecialchars(tep_href_link($redirect_path, $redirect_attr, 'SSL'));
+      $order_info['PAYPAL_RETURN_URL'] = htmlspecialchars(htmlentitydecode(tep_href_link(basename($_SERVER['SCRIPT_NAME']),'action=express_checkout', 'SSL')));
+      $order_info['PAYPAL_CANCEL_URL'] = htmlspecialchars(htmlentitydecode(tep_href_link($redirect_path, $redirect_attr, 'SSL')));
       
       if(MODULE_PAYMENT_PAYPAL_DP_CONFIRMED == 'Yes') {
         $order_info['PAYPAL_REQUIRE_CONFIRM_SHIPPING'] = '1';

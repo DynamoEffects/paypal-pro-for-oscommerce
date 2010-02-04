@@ -6,6 +6,8 @@
 
   Released under the GNU General Public License
 */
+  define('FILENAME_PAYPAL_WPP_3DS', 'paypal_wpp_3ds.php');
+  
   include(DIR_FS_CATALOG . DIR_WS_INCLUDES . 'modules/payment/paypal_wpp.php');
   include(DIR_WS_INCLUDES . 'paypal_wpp/languages/' . $language . '/paypal_wpp.php');
   
@@ -619,6 +621,10 @@
           } else {
             echo 'h = 380;';
           }
+          if (MODULE_PAYMENT_PAYPAL_DP_CC_ENABLE == 'Yes') {
+            echo 'alert("This feature is unavailable with the Cardinal Commerce 3D Secure feature enabled.");';
+            echo 'return false;';
+          }
         ?>
         }      
 
@@ -723,17 +729,19 @@
 
       if ($status_id < 1) return false;
       
-      $transaction_query = tep_db_query("SELECT transaction_id,
-                                                transaction_type,
-                                                payment_type,
-                                                payment_status,
-                                                module_code,
-                                                transaction_avs,
-                                                transaction_cvv2,
-                                                transaction_msgs 
-                                         FROM " . TABLE_ORDERS_STATUS_HISTORY_TRANSACTIONS . " 
-                                         WHERE orders_status_history_id = " . (int)$status_id . " 
-                                         LIMIT 1");
+      $transaction_query = tep_db_query(
+        "SELECT transaction_id," .
+        "       transaction_type," .
+        "       payment_type," .
+        "       payment_status," .
+        "       module_code," .
+        "       transaction_avs," .
+        "       transaction_cvv2," .
+        "       transaction_msgs " .
+        "FROM " . TABLE_ORDERS_STATUS_HISTORY_TRANSACTIONS . " " .
+        "WHERE orders_status_history_id = " . (int)$status_id . " " .
+        "LIMIT 1"
+      );
                                          
       if (tep_db_num_rows($transaction_query) < 1) return false;
       
@@ -741,9 +749,13 @@
 
       $transaction_info = '';
 
-      if ($transaction['transaction_id'])
-        $transaction_info = "Transaction ID: " . $transaction['transaction_id'] . "<br />";
-        
+      if ($transaction['transaction_id']) {
+        $transaction_info = "Transaction ID: " .
+          "<a href=\"https://www.paypal.com/" . (MODULE_PAYMENT_PAYPAL_DP_UK_ENABLED == 'Yes' ? 'uk' : 'us') . 
+          "/cgi-bin/webscr?cmd=_view-a-trans&id=" . $transaction['transaction_id'] . "\" style=\"font-weight: bold\">" . 
+          $transaction['transaction_id'] . "</a><br />";
+      }
+      
       if ($transaction['transaction_type'])
         $transaction_info .= "Transaction Type: " . $transaction['transaction_type'] . "<br />";
         
@@ -751,7 +763,7 @@
         $transaction_info .= "Payment Type: " . $transaction['payment_type'] . "<br />";
         
       if ($transaction['payment_status'])
-        $transaction_info .= "Payment Status: " . $transaction['payment_status'] . "<br />";
+        $transaction_info .= "Payment Status: <b>" . $transaction['payment_status'] . "</b><br />";
         
       if ($transaction['transaction_avs'])
         $transaction_info .= "AVS Code: " . $transaction['transaction_avs'] . "<br />";
