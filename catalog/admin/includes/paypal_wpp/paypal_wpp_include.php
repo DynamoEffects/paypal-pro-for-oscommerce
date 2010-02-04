@@ -1,6 +1,6 @@
 <?php
 /*
-  $Id: paypal_wpp.php,v 1.0.7 Brian Burton brian [at] dynamoeffects [dot] com Exp $
+  $Id: paypal_wpp.php,v 1.0.9 Brian Burton brian [at] dynamoeffects [dot] com Exp $
 
   Copyright (c) 2008, 2009 Brian Burton - brian [at] dynamoeffects [dot] com
 
