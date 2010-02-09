@@ -633,8 +633,8 @@
       $redirect_attr = 'ec_cancel=1';
       
       //These strings need to have ampersands escaped
-      $order_info['PAYPAL_RETURN_URL'] = htmlspecialchars(htmlentitydecode(tep_href_link(basename($_SERVER['SCRIPT_NAME']),'action=express_checkout', 'SSL')));
-      $order_info['PAYPAL_CANCEL_URL'] = htmlspecialchars(htmlentitydecode(tep_href_link($redirect_path, $redirect_attr, 'SSL')));
+      $order_info['PAYPAL_RETURN_URL'] = htmlspecialchars($this->href_link(basename($_SERVER['SCRIPT_NAME']),'action=express_checkout', true));
+      $order_info['PAYPAL_CANCEL_URL'] = htmlspecialchars($this->href_link($redirect_path, $redirect_attr, true));
       
       if(MODULE_PAYMENT_PAYPAL_DP_CONFIRMED == 'Yes') {
         $order_info['PAYPAL_REQUIRE_CONFIRM_SHIPPING'] = '1';
@@ -693,7 +693,7 @@
         $order_info['PAYPAL_ZIP'] = '';
         $order_info['PAYPAL_COUNTRY'] = '';
       }
-
+      
       //This loop is necessary because I have found that many times Paypal simply does not respond.
       //Don't ask me why.
       for ($tries = $this->max_retries; $tries > 0; $tries--) {
@@ -2012,6 +2012,47 @@
       );
     }
     
+    /*
+     * This is a copy of the tep_href_function, but modified to avoid
+     * URL formation problems.
+     */
+     
+    function href_link($page = '', $parameters = '', $ssl = false) {
+      global $request_type, $session_started, $SID;
+
+      if (!$ssl || ($ssl && !ENABLE_SSL)) {
+        $link = HTTP_SERVER . DIR_WS_HTTP_CATALOG;
+      } else {
+        $link = HTTPS_SERVER . DIR_WS_HTTPS_CATALOG;
+      }
+
+      if (tep_not_null($parameters)) {
+        $link .= $page . '?' . tep_output_string($parameters);
+        $separator = '&';
+      } else {
+        $link .= $page;
+        $separator = '?';
+      }
+
+      while ( (substr($link, -1) == '&') || (substr($link, -1) == '?') ) $link = substr($link, 0, -1);
+
+      if ( ($add_session_id == true) && ($session_started == true) && (SESSION_FORCE_COOKIE_USE == 'False') ) {
+        if (tep_not_null($SID)) {
+          $_sid = $SID;
+        } elseif (( $request_type == 'NONSSL' && $ssl && ENABLE_SSL == true ) || ( $request_type == 'SSL' && !$ssl )) {
+          if (HTTP_COOKIE_DOMAIN != HTTPS_COOKIE_DOMAIN) {
+            $_sid = tep_session_name() . '=' . tep_session_id();
+          }
+        }
+      }
+
+      if (isset($_sid)) {
+        $link .= $separator . tep_output_string($_sid);
+      }
+
+      return $link;
+    }
+    
     
     /***************************************************************
      ****************** CARDINAL CENTINEL CODE *********************
@@ -2308,3 +2349,4 @@
       $_SESSION['cardinal_centinel']['auth_eci'] = $auth_response['EciFlag'];
     }
   }
+?>
