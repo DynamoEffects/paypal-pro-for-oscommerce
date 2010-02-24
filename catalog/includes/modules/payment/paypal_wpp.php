@@ -2236,8 +2236,9 @@
         $_SESSION['cardinal_centinel'] = $result;
         
         $_SESSION['cardinal_centinel']['post'] = $_POST;
+        $cardinal_centinel = $_SESSION['cardinal_centinel'];
         
-        tep_redirect(tep_href_link(DIR_WS_INCLUDES . 'paypal_wpp/' . FILENAME_PAYPAL_WPP_3DS, '', 'SSL'));
+        tep_redirect(tep_href_link(DIR_WS_INCLUDES . 'paypal_wpp/' . FILENAME_PAYPAL_WPP_3DS, 'action=cardinal_centinel_lookup&osCsid=' . tep_session_id(), 'SSL'));
         exit;
       }
       

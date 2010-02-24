@@ -1,5 +1,5 @@
 <?php
-  if ($_GET['blank'] == '1') die('<html></html>');
+  if (@isset($_GET['blank']) && $_GET['blank'] == '1') die('<html></html>');
    
   chdir('../..');
   require('includes/application_top.php');
@@ -26,6 +26,7 @@
     width: 100%;
     height: 400px;
     border: 0;
+    background-color: #fff;
   }
 </style>
 </head>
