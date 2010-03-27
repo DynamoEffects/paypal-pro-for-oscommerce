@@ -1,8 +1,8 @@
 <?php
 /*
-  $Id: paypal_wpp.php,v 1.0.9 Brian Burton brian [at] dynamoeffects [dot] com Exp $
+  $Id: paypal_wpp.php Brian Burton support [at] dynamoeffects [dot] com Exp $
 
-  Copyright (c) 2008, 2009 Brian Burton - brian [at] dynamoeffects [dot] com
+  Copyright (c) 2008, 2009 Brian Burton - support [at] dynamoeffects [dot] com
 
   Released under the GNU General Public License
 */
@@ -18,7 +18,7 @@
       global $order;
       $this->code = 'paypal_wpp';
       $this->codeTitle = 'PayPal Website Payments Pro Plus';
-      $this->codeVersion = '1.0.7';
+      $this->codeVersion = '1.1.2';
       $this->debug_email = STORE_OWNER_EMAIL_ADDRESS;
       
       /* This variable stores the transaction request */
@@ -166,6 +166,7 @@
                                                  'field' => tep_draw_pull_down_menu('paypalwpp_cc_expires_month', $expires_month) . '&nbsp;' . tep_draw_pull_down_menu('paypalwpp_cc_expires_year', $expires_year)),
                                            array('title' => MODULE_PAYMENT_PAYPAL_DP_TEXT_CREDIT_CARD_CHECKNUMBER,
                                                  'field' => tep_draw_input_field('paypalwpp_cc_checkcode', '', 'size="4" maxlength="4"') . (!$this->is_admin ? '&nbsp;<a href="javascript:void(0);" onclick="javascript:window.open(\'' . tep_href_link(DIR_WS_INCLUDES . 'paypal_wpp/' . FILENAME_CVV2INFO, '', 'SSL') . '\',\'cardsecuritycode\',\'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=yes, resizable=no, width=500, height=350\');">' . MODULE_PAYMENT_PAYPAL_DP_TEXT_CREDIT_CARD_CHECKNUMBER_LOCATION . '</a>' : '' ))));
+                                                 
       if (MODULE_PAYMENT_PAYPAL_DP_UK_ENABLED == 'Yes') {
         $selection['fields'][] = array('title' => MODULE_PAYMENT_PAYPAL_DP_TEXT_CREDIT_CARD_START_MONTH,
                                        'field' => tep_draw_pull_down_menu('paypalwpp_cc_start_month', $start_month, '', 'id="wpp_uk_start_month"') . '&nbsp;<small>' . MODULE_PAYMENT_PAYPAL_DP_TEXT_CREDIT_CARD_SWITCHSOLO_ONLY . '</small>');
@@ -369,6 +370,8 @@
             } else {
               $this->away_with_you(MODULE_PAYMENT_PAYPAL_DP_TEXT_STATE_ERROR);
             }
+          } else {
+            $the_state = $state;
           }
           
           break;
@@ -623,9 +626,9 @@
       $order_info['PAYPAL_CPP_HEADER_BACK_COLOR'] = '';
       $order_info['PAYPAL_CPP_PAYFLOW_COLOR'] = '';
       
-      if ($return_to = FILENAME_SHOPPING_CART) {
+      if ($return_to == FILENAME_SHOPPING_CART) {
         $redirect_path = $return_to;
-      } elseif ($return_to = FILENAME_CHECKOUT_SHIPPING && tep_session_is_registered('customer_first_name') && tep_session_is_registered('customer_id')) {
+      } elseif ($return_to == FILENAME_CHECKOUT_SHIPPING && tep_session_is_registered('customer_first_name') && tep_session_is_registered('customer_id')) {
         $redirect_path = $return_to;
       } elseif(!tep_session_is_registered('customer_first_name') && !tep_session_is_registered('customer_id')) {
         $redirect_path = FILENAME_LOGIN;
@@ -1607,6 +1610,11 @@
               $error_occurred = true;
               $error_log = $this->return_transaction_errors($final_req['DoDirectPaymentResponse'][0]['Errors']);
             }
+          } elseif ($final_req['faultcode'] != '') {
+            //There was an error in our request syntax
+            //This should never occur in production
+            $error_occurred = true;
+            $error_log = $this->return_transaction_errors($final_req['faultstring']);
           } else {
             //Do a transaction search to make sure the connection didn't just timeout
             //It searches by email of payer and amount.  That should be accurate enough
