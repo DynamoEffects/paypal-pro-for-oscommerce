@@ -576,7 +576,7 @@
       global $order, $customer_first_name, $customer_id, $languages_id, $currencies;
       $order_info = array();
       
-      require(DIR_WS_CLASSES . 'order.php');
+      require_once(DIR_WS_CLASSES . 'order.php');
       $order = new order;
       
       //Find out the user's language so that if PayPal supports it, it'll be the language used on PayPal's site.
@@ -1583,7 +1583,12 @@
         $order_info['PAYPAL_BUYER_EMAIL'] = $order->customer['email_address'];
 
         //Credit card details
-        $order_info['PAYPAL_CC_TYPE'] = $cc_type;
+        if ($cc_type == 'Maestro') {
+          $order_info['PAYPAL_CC_TYPE'] = 'Switch';
+        } else {
+          $order_info['PAYPAL_CC_TYPE'] = $cc_type;
+        }
+        
         $order_info['PAYPAL_CC_NUMBER'] = $cc_number;
         $order_info['PAYPAL_CC_EXP_MONTH'] = $cc_expdate_month;
         $order_info['PAYPAL_CC_EXP_YEAR'] = $cc_expdate_year;
@@ -2151,7 +2156,7 @@
             $xml .= '<MpiVendor3ds>Y</MpiVendor3ds>';
             $xml .= '<Cavv>' . $_SESSION['cardinal_centinel']['auth_cavv'] . '</Cavv>';
             $xml .= '<Eci3ds>' . $_SESSION['cardinal_centinel']['auth_eci'] . '</Eci3ds>';
-            $xml .= '<XID>' . $_SESSION['cardinal_centinel']['auth_xid'] . '</XID>';
+            $xml .= '<Xid>' . $_SESSION['cardinal_centinel']['auth_xid'] . '</Xid>';
             $xml .= '</ThreeDSecureRequest>';
             
             $order_info['CARDINAL_CENTINEL_3DS'] = $xml;

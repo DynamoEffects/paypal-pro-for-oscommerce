@@ -59,8 +59,8 @@
             <ExpMonth>PAYPAL_CC_EXP_MONTH</ExpMonth>
             <ExpYear>PAYPAL_CC_EXP_YEAR</ExpYear>
             <CVV2>PAYPAL_CC_CVV2</CVV2>
+            CARDINAL_CENTINEL_3DS
           </CreditCard>
-          CARDINAL_CENTINEL_3DS
           <IPAddress>PAYPAL_IP_ADDRESS</IPAddress>
           <MerchantSessionId>PAYPAL_MERCHANT_SESSION_ID</MerchantSessionId>
         </DoDirectPaymentRequestDetails>
