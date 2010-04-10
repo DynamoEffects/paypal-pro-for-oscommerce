@@ -36,7 +36,7 @@
   define('MODULE_PAYMENT_PAYPAL_DP_TEXT_EC_HEADER', 'Fast, Secure Checkout with PayPal:');
   define('MODULE_PAYMENT_PAYPAL_DP_TEXT_BUTTON_TEXT', 'Save time. Checkout securely.<br>Pay without sharing your financial information.');
   define('MODULE_PAYMENT_PAYPAL_DP_TEXT_STATE_ERROR', 'The state assigned to your account is not valid.  Please go into your account settings and change it.');
-  define('MODULE_PAYMENT_PAYPAL_DP_MISSING_XML', 'PayPal WPP installation incomplete!  There should be XML files located in ' . DIR_FS_CATALOG . DIR_WS_INCLUDES . 'wpp_xml/ !');
+  define('MODULE_PAYMENT_PAYPAL_DP_MISSING_XML', 'PayPal WPP installation incomplete!  There should be XML files located in ' . DIR_FS_CATALOG . DIR_WS_INCLUDES . 'paypal_wpp/xml/ !');
   define('MODULE_PAYMENT_PAYPAL_DP_CURL_NOT_INSTALLED', 'cURL, which is required by the PayPal Website Payments Pro module, is not present.  Please contact your webhost and request that it be installed.');
   define('MODULE_PAYMENT_PAYPAL_DP_CERT_NOT_INSTALLED', 'Your Website Payments Pro API certificate could not be found.  Please check the location in your administration section.');
   define('MODULE_PAYMENT_PAYPAL_DP_GEN_ERROR', 'Payment not processed!');
