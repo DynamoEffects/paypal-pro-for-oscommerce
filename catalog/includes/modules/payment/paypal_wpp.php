@@ -9,7 +9,7 @@
   class paypal_wpp {
     var $code, $title, $description, $enabled, $resources, $is_admin, $max_retries, $cc_test_number, $total_amount;
     var $transaction_log = array();
-    var $debug_email;
+    var $debug_email, $dynamo_checkout = false;
     
     /*
      * Constructor function -- initialize class properties
@@ -266,6 +266,10 @@
     function away_with_you($error_msg = '', $kill_sess_vars = false, $goto_page = '') {
       global $customer_first_name, $customer_id, $navigation, $paypal_error;
       
+      //Dynamo Checkout specific code
+      if ($this->dynamo_checkout && $error_msg != '') {
+        $kill_sess_vars = true;
+      }
       if ($kill_sess_vars) {
         if ($_SESSION['paypal_ec_temp']) { 
           $this->ec_delete_user($customer_id);
@@ -296,11 +300,16 @@
       if ($error_msg) {
         if (!tep_session_is_registered('paypal_error')) tep_session_register('paypal_error');
         $_SESSION['paypal_error'] = $error_msg;
+        
+        if ($this->dynamo_checkout) {
+          tep_redirect(tep_href_link(FILENAME_CHECKOUT, '', 'SSL', true, false));
+          exit;
+        }
       } else {
         if (tep_session_is_registered('paypal_error')) tep_session_unregister('paypal_error');
       }
       
-      if (!$this->is_admin)
+      if (!$this->is_admin && !$this->dynamo_checkout)
         tep_redirect(tep_href_link($redirect_path, '', 'SSL', true, false));
       else
         return false;
@@ -383,10 +392,10 @@
           $the_state = '';
           break;
         default:
-          $the_state = $state;
+          $the_state = $this->wpp_xml_safe($state);
           break;
       }
-    return $the_state;
+      return $the_state;
     }
 
     function wpp_get_currency() {
@@ -626,7 +635,9 @@
       $order_info['PAYPAL_CPP_HEADER_BACK_COLOR'] = '';
       $order_info['PAYPAL_CPP_PAYFLOW_COLOR'] = '';
       
-      if ($return_to == FILENAME_SHOPPING_CART) {
+      if ($this->dynamo_checkout) {
+        $redirect_path = FILENAME_CHECKOUT;
+      } elseif ($return_to == FILENAME_SHOPPING_CART) {
         $redirect_path = $return_to;
       } elseif ($return_to == FILENAME_CHECKOUT_SHIPPING && tep_session_is_registered('customer_first_name') && tep_session_is_registered('customer_id')) {
         $redirect_path = $return_to;
