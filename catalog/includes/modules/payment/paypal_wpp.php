@@ -620,6 +620,9 @@
       //than they do as a default for the store, all prices will be converted
       $currency_value = $currencies->get_value($this->wpp_get_currency());
       
+      if ($currency_value <= 0) {
+        $currency_value = 1;
+      }
       $order_info['PAYPAL_ORDER_TOTAL'] = number_format($order->info['total'] * $currency_value, 2, '.', '');
       
       //Page Style
@@ -1605,7 +1608,7 @@
         $order_info['PAYPAL_CC_EXP_YEAR'] = $cc_expdate_year;
         $order_info['PAYPAL_CC_CVV2'] = $cc_checkcode;
 
-        $this->cardinal_centinel_before_process(&$order_info);
+        $this->cardinal_centinel_before_process($order_info);
         //Make the call and (hopefully) return an array of information
         $final_req = $this->wpp_execute_transaction('doDirectPayment', $order_info);
 
@@ -2152,7 +2155,7 @@
       return round(($amount * 100), 0);
     }
     
-    function cardinal_centinel_before_process($order_info = '') {
+    function cardinal_centinel_before_process(&$order_info = '') {
       global $order;
       
       $order_info['CARDINAL_CENTINEL_3DS'] = '';
@@ -2187,14 +2190,14 @@
         );
         
         if ($cardinal_centinel_process == 'lookup') {
-          $this->cardinal_centinel_lookup($auth_info, &$order_info);
+          $this->cardinal_centinel_lookup($auth_info, $order_info);
         } else {
-          $this->cardinal_centinel_authenticate($auth_info, &$order_info);
+          $this->cardinal_centinel_authenticate($auth_info);
         }
       }
     }
     
-    function cardinal_centinel_lookup($auth_info, $order_info) {
+    function cardinal_centinel_lookup($auth_info, &$order_info) {
       $auth_info = array_merge($auth_info, array(
         'CARDINAL_CENTINEL_ORDER_ID' => tep_session_id(),
         'CARDINAL_CENTINEL_ORDER_DESC' => $order_info['PAYPAL_ORDER_DESCRIPTION'],
