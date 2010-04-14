@@ -1200,6 +1200,9 @@
       //than they do as a default for the store, all prices will be converted
       $currency_value = $currencies->get_value($this->wpp_get_currency());
       
+      if ($currency_value <= 0) {
+        $currency_value = 1;
+      }
       if (count($order_totals) < 1) {
         $this->away_with_you(MODULE_PAYMENT_PAYPAL_DP_BUG_1629);
       }
@@ -1373,6 +1376,10 @@
       //If the merchant has a different currency selected for this module
       //than they do as a default for the store, all prices will be converted
       $currency_value = $currencies->get_value($this->wpp_get_currency());
+      
+      if ($currency_value <= 0) {
+        $currency_value = 1;
+      }
 
       $order_info['PAYPAL_ORDER_TOTAL'] = number_format($order_total['ot_total'] * $currency_value, 2, '.', '');
       $this->total_amount = $order_info['PAYPAL_ORDER_TOTAL'];
