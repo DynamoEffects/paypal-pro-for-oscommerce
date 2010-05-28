@@ -441,7 +441,7 @@
       //Add some common variables to the $data array
       $data['PAYPAL_USERNAME'] = MODULE_PAYMENT_PAYPAL_DP_API_USERNAME;
       $data['PAYPAL_PASSWORD'] = MODULE_PAYMENT_PAYPAL_DP_API_PASSWORD;
-      $data['PAYPAL_VERSION'] = '2.0';
+      $data['PAYPAL_VERSION'] = '59.0';
       
       //Solo and Maestro cards can only be authorized and the currency must be GBP
       if ($order->info['cc_type'] == 'Maestro' || $order->info['cc_type'] == 'Solo') {
