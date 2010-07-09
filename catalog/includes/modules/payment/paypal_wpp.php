@@ -2,7 +2,7 @@
 /*
   $Id: paypal_wpp.php Brian Burton support [at] dynamoeffects [dot] com Exp $
 
-  Copyright (c) 2008, 2009 Brian Burton - support [at] dynamoeffects [dot] com
+  Copyright (c) 2008, 2009, 2010 Brian Burton - support [at] dynamoeffects [dot] com
 
   Released under the GNU General Public License
 */
