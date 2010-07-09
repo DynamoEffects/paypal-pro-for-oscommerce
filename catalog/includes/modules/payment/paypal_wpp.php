@@ -699,6 +699,8 @@
         $order_info['PAYPAL_ADDRESS_OVERRIDE'] = '0';
       }
       
+      $order_info['PAYPAL_REQ_BILLING_ADDRESS'] = 0;
+      
       /* Don't override if the state is missing (Avoid 10729 errors) */
       if ($order_info['PAYPAL_ADDRESS_OVERRIDE'] == '1' && $order_info['PAYPAL_STATE'] == '') {
         $order_info['PAYPAL_ADDRESS_OVERRIDE'] = '0';
@@ -772,7 +774,7 @@
       }
       
       //Make sure the token is in the correct format
-      if (!ereg("([C-E]{2})-([A-Z0-9]{17})", $_SESSION['paypal_ec_token'])) {
+      if (!preg_match("([C-E]{2})-([A-Z0-9]{17})", $_SESSION['paypal_ec_token'])) {
         $this->away_with_you(MODULE_PAYMENT_PAYPAL_DP_INVALID_RESPONSE, true);
       }
       
@@ -808,7 +810,8 @@
       } else {
         $root_node = $response['GetExpressCheckoutDetailsResponse'][0]['GetExpressCheckoutDetailsResponseDetails'][0];
         $payer_info = $root_node['PayerInfo'][0];
-      
+        $billing_address = (@is_array($root_node['BillingAddress'][0]) ? $root_node['BillingAddress'][0] : false);
+        
         if(MODULE_PAYMENT_PAYPAL_DP_REQ_VERIFIED == 'Yes' && strtolower($payer_info['PayerStatus']) != 'verified') {
           $this->away_with_you(MODULE_PAYMENT_PAYPAL_DP_TEXT_UNVERIFIED, true);
         }
@@ -817,6 +820,7 @@
         $_SESSION['paypal_ec_payer_id'] = $payer_info['PayerID'];
 
         tep_session_register('paypal_ec_payer_info');
+        $ship_name = explode(" ", $payer_info['Address'][0]['Name'], 2);
         $_SESSION['paypal_ec_payer_info'] = array(
             'payer_id' => $payer_info['PayerID'], 
             'payer_email' => utf8_decode($payer_info['Payer']), 
@@ -826,6 +830,8 @@
             'payer_status' => utf8_decode($payer_info['PayerStatus']),
             'ship_owner' => utf8_decode($payer_info['Address'][0]['AddressOwner']),
             'ship_name' => utf8_decode($payer_info['Address'][0]['Name']),
+            'ship_firstname' => utf8_decode($ship_name[0]),
+            'ship_lastname' => utf8_decode($ship_name[1]),
             'ship_street_1' => utf8_decode($payer_info['Address'][0]['Street1']),
             'ship_street_2' => utf8_decode($payer_info['Address'][0]['Street2']),
             'ship_city' => utf8_decode($payer_info['Address'][0]['CityName']),
@@ -834,40 +840,66 @@
             'ship_country' => utf8_decode($payer_info['Address'][0]['Country']),
             'ship_phone' => utf8_decode($root_node['ContactPhone']),
             'ship_address_status' => utf8_decode($payer_info['Address'][0]['AddressStatus']));
-            
+        
+        $address_groups = array('ship');
+        
+        if (isset($billing_address)) {
+          $bill_name = explode(" ", $billing_address['Name'], 2);
+          
+          $_SESSION['paypal_ec_payer_info'] = array_merge($_SESSION['paypal_ec_payer_info'], array(
+            'bill_owner' => utf8_decode($billing_address['AddressOwner']),
+            'bill_name' => utf8_decode($billing_address['Name']),
+            'bill_firstname' => utf8_decode($bill_name[0]),
+            'bill_lastname' => utf8_decode($bill_name[1]),
+            'bill_street_1' => utf8_decode($billing_address['Street1']),
+            'bill_street_2' => utf8_decode($billing_address['Street2']),
+            'bill_city' => utf8_decode($billing_address['CityName']),
+            'bill_state' => utf8_decode($billing_address['StateOrProvince']),
+            'bill_postal_code' => utf8_decode($billing_address['PostalCode']),
+            'bill_country' => utf8_decode($billing_address['Country']),
+            'bill_phone' => utf8_decode($billing_address['ContactPhone']),
+            'bill_address_status' => utf8_decode($billing_address['AddressStatus'])
+          ));
 
-//moved this block below creation of paypal_ec_payer_info array, because it depends on these values.  
-         $country_query = tep_db_query("SELECT countries_id, countries_name, address_format_id 
-                                       FROM " . TABLE_COUNTRIES . " 
-                                       WHERE countries_iso_code_2 = '" . tep_db_input($_SESSION['paypal_ec_payer_info']['ship_country']) . "' 
-                                       LIMIT 1");
-                                       
-        if (tep_db_num_rows($country_query) > 0) {
-          $country = tep_db_fetch_array($country_query);
-          $country_id = $country['countries_id'];
-          $_SESSION['paypal_ec_payer_info']['ship_country_id'] = $country_id;
-          $_SESSION['paypal_ec_payer_info']['ship_country_name'] = $country['countries_name'];
-          $address_format_id = $country['address_format_id'];
-        } else {
-          $this->away_with_you(MODULE_PAYMENT_PAYPAL_DP_TEXT_ERROR_COUNTRY, true);
+          $address_groups[] = 'bill';
         }
 
-        $states_query = tep_db_query("SELECT zone_id 
-                                      FROM " . TABLE_ZONES . " 
-                                      WHERE (zone_code = '" . tep_db_input($_SESSION['paypal_ec_payer_info']['ship_state']) . "' 
-                                         OR zone_name = '" . tep_db_input($_SESSION['paypal_ec_payer_info']['ship_state']) . "')
-                                        AND zone_country_id = '" . (int)$country_id . "' 
-                                      LIMIT 1");
-                                      
-        if (tep_db_num_rows($states_query) > 0) {
-          $states = tep_db_fetch_array($states_query);
-          $state_id = $states['zone_id'];
-        } else {
-          $state_id = 0;
+        
+        $state_id = array();
+        foreach ($address_groups as $ag) {
+          //moved this block below creation of paypal_ec_payer_info array, because it depends on these values.  
+           $country_query = tep_db_query("SELECT countries_id, countries_name, address_format_id 
+                                         FROM " . TABLE_COUNTRIES . " 
+                                         WHERE countries_iso_code_2 = '" . tep_db_input($_SESSION['paypal_ec_payer_info'][$ag . '_country']) . "' 
+                                         LIMIT 1");
+                                         
+          if (tep_db_num_rows($country_query) > 0) {
+            $country = tep_db_fetch_array($country_query);
+            $country_id = $country['countries_id'];
+            $_SESSION['paypal_ec_payer_info'][$ag . '_country_id'] = $country_id;
+            $_SESSION['paypal_ec_payer_info'][$ag . '_country_name'] = $country['countries_name'];
+            $address_format_id = $country['address_format_id'];
+          } else {
+            $this->away_with_you(MODULE_PAYMENT_PAYPAL_DP_TEXT_ERROR_COUNTRY, true);
+          }
+
+          $states_query = tep_db_query("SELECT zone_id 
+                                        FROM " . TABLE_ZONES . " 
+                                        WHERE (zone_code = '" . tep_db_input($_SESSION['paypal_ec_payer_info'][$ag . '_state']) . "' 
+                                           OR zone_name = '" . tep_db_input($_SESSION['paypal_ec_payer_info'][$ag . '_state']) . "')
+                                          AND zone_country_id = '" . (int)$country_id . "' 
+                                        LIMIT 1");
+                                        
+          if (tep_db_num_rows($states_query) > 0) {
+            $states = tep_db_fetch_array($states_query);
+            $state_id[$ag] = $states['zone_id'];
+          } else {
+            $state_id[$ag] = 0;
+          }
+
+          $_SESSION['paypal_ec_payer_info'][$ag . '_zone_id'] = $state_id[$ag];
         }
 
-        $_SESSION['paypal_ec_payer_info']['ship_zone_id'] = $state_id;
-    
         if (!tep_session_is_registered('paypal_ec_temp')) tep_session_register('paypal_ec_temp');
         
         //If the customer is logged in
@@ -922,16 +954,16 @@
             tep_db_perform(TABLE_CUSTOMERS, $sql_data_array);
       
             $customer_id = tep_db_insert_id();
-      
+            
             $sql_data_array = array('customers_id' => $customer_id,
                                     'entry_company' => tep_db_input($_SESSION['paypal_ec_payer_info']['payer_business']),
-                                    'entry_firstname' => tep_db_input($_SESSION['paypal_ec_payer_info']['payer_firstname']),
-                                    'entry_lastname' => tep_db_input($_SESSION['paypal_ec_payer_info']['payer_lastname']),
+                                    'entry_firstname' => tep_db_input($_SESSION['paypal_ec_payer_info']['ship_firstname']),
+                                    'entry_lastname' => tep_db_input($_SESSION['paypal_ec_payer_info']['ship_lastname']),
                                     'entry_street_address' => tep_db_input($_SESSION['paypal_ec_payer_info']['ship_street_1']),
                                     'entry_suburb' => tep_db_input($_SESSION['paypal_ec_payer_info']['ship_street_2']),
                                     'entry_city' => tep_db_input($_SESSION['paypal_ec_payer_info']['ship_city']),
-                                    'entry_state' => ($state_id ? '' : tep_db_input($_SESSION['paypal_ec_payer_info']['ship_state'])),
-                                    'entry_zone_id' => $state_id,
+                                    'entry_state' => ($state_id['ship'] ? '' : tep_db_input($_SESSION['paypal_ec_payer_info']['ship_state'])),
+                                    'entry_zone_id' => $state_id['ship'],
                                     'entry_postcode' => tep_db_input($_SESSION['paypal_ec_payer_info']['ship_postal_code']),
                                     'entry_country_id' => $country_id);
       
@@ -944,19 +976,46 @@
             
             if (!tep_session_is_registered('sendto')) tep_session_register('sendto');
 
-			if ($_SESSION['paypal_ec_payer_info']['payer_firstname'] . ' ' . $_SESSION['paypal_ec_payer_info']['payer_lastname'] == $_SESSION['paypal_ec_payer_info']['ship_name']) {
+            if ($_SESSION['paypal_ec_payer_info']['payer_firstname'] . ' ' . $_SESSION['paypal_ec_payer_info']['payer_lastname'] == $_SESSION['paypal_ec_payer_info']['ship_name']) {
               $sendto = $address_id;
-			} else {
+            } else {
 			  //$sql_data_array already contains the bulk of the data; just set the 'ship to' name and re-use the rest.
               $sql_data_array['entry_firstname'] = tep_db_input($_SESSION['paypal_ec_payer_info']['ship_name']);
-			  $sql_data_array['entry_lastname'] = '';
+              $sql_data_array['entry_lastname'] = '';
       
               tep_db_perform(TABLE_ADDRESS_BOOK, $sql_data_array);
       
               $address_id = tep_db_insert_id();			
               $sendto = $address_id;
-			}
-      
+            }
+            
+            
+            if ($billing_address) {
+              
+              $sql_data_array = array('customers_id' => $customer_id,
+                                      'entry_company' => tep_db_input($_SESSION['paypal_ec_payer_info']['payer_business']),
+                                      'entry_firstname' => tep_db_input($_SESSION['paypal_ec_payer_info']['bill_firstname']),
+                                      'entry_lastname' => tep_db_input($_SESSION['paypal_ec_payer_info']['bill_lastname']),
+                                      'entry_street_address' => tep_db_input($_SESSION['paypal_ec_payer_info']['bill_street_1']),
+                                      'entry_suburb' => tep_db_input($_SESSION['paypal_ec_payer_info']['bill_street_2']),
+                                      'entry_city' => tep_db_input($_SESSION['paypal_ec_payer_info']['bill_city']),
+                                      'entry_state' => ($state_id['bill'] ? '' : tep_db_input($_SESSION['paypal_ec_payer_info']['bill_state'])),
+                                      'entry_zone_id' => $state_id['bill'],
+                                      'entry_postcode' => tep_db_input($_SESSION['paypal_ec_payer_info']['bill_postal_code']),
+                                      'entry_country_id' => $country_id);
+        
+              tep_db_perform(TABLE_ADDRESS_BOOK, $sql_data_array);
+        
+              $address_id = tep_db_insert_id();
+              
+              if (!tep_session_is_registered('billto')) tep_session_register('billto');
+              $billto = $address_id;
+  
+            } else {
+              if (!tep_session_is_registered('billto')) tep_session_register('billto');
+              $billto = $address_id;
+            }
+
             tep_db_query("update " . TABLE_CUSTOMERS . " set customers_default_address_id = '" . (int)$address_id . "' where customers_id = '" . (int)$customer_id . "'");
       
             tep_db_query("insert into " . TABLE_CUSTOMERS_INFO . " (customers_info_id, customers_info_number_of_logons, customers_info_date_account_created) values ('" . (int)$customer_id . "', '0', now())");
@@ -1003,78 +1062,54 @@
       if (!tep_session_is_registered('billto')) tep_session_register('billto'); 
       
       if (MODULE_PAYMENT_PAYPAL_EC_ADDRESS_OVERRIDE == 'PayPal') {
-        $address_query = tep_db_query("SELECT address_book_id as id 
-                                       FROM " . TABLE_ADDRESS_BOOK . " 
-                                       WHERE entry_street_address = '" . tep_db_input($_SESSION['paypal_ec_payer_info']['ship_street_1']) . "' 
-                                         AND customers_id = '" . $customer_id . "'
-										 AND entry_firstname = '" . tep_db_input($_SESSION['paypal_ec_payer_info']['payer_firstname']) . "' 
-										 AND entry_lastname = '" . tep_db_input($_SESSION['paypal_ec_payer_info']['payer_lastname']) . "' 
-                                         AND entry_city = '" . tep_db_input($_SESSION['paypal_ec_payer_info']['ship_city']) . "' 
-                                         AND entry_postcode = '" . tep_db_input($_SESSION['paypal_ec_payer_info']['ship_postal_code']) . "' 
-                                       LIMIT 1");
-                                       
-        if (tep_db_num_rows($address_query) > 0) {
-          $address = tep_db_fetch_array($address_query);
-          $billto = $address['id'];
-        } else {
-          //Create the address book entry
-          $sql_data_array = array('customers_id' => $customer_id,
-                                  'entry_company' => tep_db_input($_SESSION['paypal_ec_payer_info']['payer_business']),
-                                  'entry_firstname' => tep_db_input($_SESSION['paypal_ec_payer_info']['payer_firstname']),
-                                  'entry_lastname' => tep_db_input($_SESSION['paypal_ec_payer_info']['payer_lastname']),
-                                  'entry_street_address' => tep_db_input($_SESSION['paypal_ec_payer_info']['ship_street_1']),
-                                  'entry_suburb' => tep_db_input($_SESSION['paypal_ec_payer_info']['ship_street_2']),
-                                  'entry_city' => tep_db_input($_SESSION['paypal_ec_payer_info']['ship_city']),
-                                  'entry_state' => ((int)$_SESSION['paypal_ec_payer_info']['ship_zone_id'] ? '' : tep_db_input($_SESSION['paypal_ec_payer_info']['ship_state'])),
-                                  'entry_zone_id' => (int)$_SESSION['paypal_ec_payer_info']['ship_zone_id'],
-                                  'entry_postcode' => tep_db_input($_SESSION['paypal_ec_payer_info']['ship_postal_code']),
-                                  'entry_country_id' => (int)$_SESSION['paypal_ec_payer_info']['ship_country_id']);
-      
-          tep_db_perform(TABLE_ADDRESS_BOOK, $sql_data_array);
-      
-          $insert_id = tep_db_insert_id();
-          
-          $billto = $insert_id;
+        //if ($billto > 0 && $sendto > 0) return false;
+        
+        $address_groups = array('ship');
+        $addresses = array('bill' => $billto, 'ship' => $sendto);
+        
+        if (isset($_SESSION['paypal_ec_payer_info']['bill_street_1'])) {
+          $address_groups[] = 'bill';
         }
-		
-		//create a separate ship to address, if necessary
-		if ($_SESSION['paypal_ec_payer_info']['payer_firstname'] . ' ' . $_SESSION['paypal_ec_payer_info']['payer_lastname'] == $_SESSION['paypal_ec_payer_info']['ship_name']) {
-          $sendto = $billto;
-		} else {
-          //search the address book for the shipping address.  
-          $address_query = tep_db_query("SELECT address_book_id as id 
-                                         FROM " . TABLE_ADDRESS_BOOK . " 
-                                         WHERE entry_street_address = '" . tep_db_input($_SESSION['paypal_ec_payer_info']['ship_street_1']) . "' 
-                                           AND customers_id = '" . $customer_id . "'
-										   AND '" . tep_db_input($_SESSION['paypal_ec_payer_info']['ship_name']) . "' = trim(concat(entry_firstname, ' ', entry_lastname)) 
-                                           AND entry_city = '" . tep_db_input($_SESSION['paypal_ec_payer_info']['ship_city']) . "' 
-                                           AND entry_postcode = '" . tep_db_input($_SESSION['paypal_ec_payer_info']['ship_postal_code']) . "' 
-                                         LIMIT 1");
-                                       
+        
+        foreach ($address_groups as $ag) {
+          $address_query = tep_db_query(
+            "SELECT address_book_id as id 
+             FROM " . TABLE_ADDRESS_BOOK . " 
+             WHERE entry_street_address = '" . tep_db_input($_SESSION['paypal_ec_payer_info'][$ag . '_street_1']) . "' 
+               AND customers_id = '" . $customer_id . "'
+               AND entry_firstname = '" . tep_db_input($_SESSION['paypal_ec_payer_info'][$ag . '_firstname']) . "' 
+               AND entry_lastname = '" . tep_db_input($_SESSION['paypal_ec_payer_info'][$ag . '_lastname']) . "' 
+               AND entry_city = '" . tep_db_input($_SESSION['paypal_ec_payer_info'][$ag . '_city']) . "' 
+               AND entry_postcode = '" . tep_db_input($_SESSION['paypal_ec_payer_info'][$ag . '_postal_code']) . "' 
+             LIMIT 1"
+          );
+                                         
           if (tep_db_num_rows($address_query) > 0) {
             $address = tep_db_fetch_array($address_query);
-            $sendto = $address['id'];
+            $addresses[$ag] = $address['id'];
           } else {
-            //Didn't find the address.  Create one.
+            //Create the address book entry
             $sql_data_array = array('customers_id' => $customer_id,
                                     'entry_company' => tep_db_input($_SESSION['paypal_ec_payer_info']['payer_business']),
-                                    'entry_firstname' => tep_db_input($_SESSION['paypal_ec_payer_info']['ship_name']),
-                                    'entry_lastname' => '',
-                                    'entry_street_address' => tep_db_input($_SESSION['paypal_ec_payer_info']['ship_street_1']),
-                                    'entry_suburb' => tep_db_input($_SESSION['paypal_ec_payer_info']['ship_street_2']),
-                                    'entry_city' => tep_db_input($_SESSION['paypal_ec_payer_info']['ship_city']),
-                                    'entry_state' => ((int)$_SESSION['paypal_ec_payer_info']['ship_zone_id'] ? '' : tep_db_input($_SESSION['paypal_ec_payer_info']['ship_state'])),
-                                    'entry_zone_id' => (int)$_SESSION['paypal_ec_payer_info']['ship_zone_id'],
-                                    'entry_postcode' => tep_db_input($_SESSION['paypal_ec_payer_info']['ship_postal_code']),
-                                    'entry_country_id' => (int)$_SESSION['paypal_ec_payer_info']['ship_country_id']);
-      
+                                    'entry_firstname' => tep_db_input($_SESSION['paypal_ec_payer_info'][$ag . '_firstname']),
+                                    'entry_lastname' => tep_db_input($_SESSION['paypal_ec_payer_info'][$ag . '_lastname']),
+                                    'entry_street_address' => tep_db_input($_SESSION['paypal_ec_payer_info'][$ag . '_street_1']),
+                                    'entry_suburb' => tep_db_input($_SESSION['paypal_ec_payer_info'][$ag . '_street_2']),
+                                    'entry_city' => tep_db_input($_SESSION['paypal_ec_payer_info'][$ag . '_city']),
+                                    'entry_state' => ((int)$_SESSION['paypal_ec_payer_info'][$ag . '_zone_id'] ? '' : tep_db_input($_SESSION['paypal_ec_payer_info'][$ag . '_state'])),
+                                    'entry_zone_id' => (int)$_SESSION['paypal_ec_payer_info'][$ag . '_zone_id'],
+                                    'entry_postcode' => tep_db_input($_SESSION['paypal_ec_payer_info'][$ag . '_postal_code']),
+                                    'entry_country_id' => (int)$_SESSION['paypal_ec_payer_info'][$ag . '_country_id']);
             tep_db_perform(TABLE_ADDRESS_BOOK, $sql_data_array);
-      
-            $address_id = tep_db_insert_id();			
-            $sendto = $address_id;
+
+            $addresses[$ag] = tep_db_insert_id();
           }
-		}
-		
+        }
+        
+        $billto = $addresses['bill'];
+        $sendto = $addresses['ship'];
+        
+        if ($billto <= 0) $billto = $sendto;
       /*
        * Use the default address found in the store
        */

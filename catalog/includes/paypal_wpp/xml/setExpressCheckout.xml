@@ -21,6 +21,7 @@
         <AddressOverride>PAYPAL_ADDRESS_OVERRIDE</AddressOverride>
         <LocaleCode>PAYPAL_LOCALE_CODE</LocaleCode>
         <PageStyle>PAYPAL_PAGE_STYLE</PageStyle>
+        <ReqBillingAddress>PAYPAL_REQ_BILLING_ADDRESS</ReqBillingAddress>
         <cpp-header-image>PAYPAL_CPP_HEADER_IMAGE</cpp-header-image>
         <cpp-header-border-color>PAYPAL_CPP_HEADER_BORDER_COLOR</cpp-header-border-color>
         <cpp-header-back-color>PAYPAL_CPP_HEADER_BACK_COLOR</cpp-header-back-color>
